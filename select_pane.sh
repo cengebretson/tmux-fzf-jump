@@ -32,7 +32,7 @@ function select_pane() {
     fzf_version_comparison=$?
     if [[ ${fzf_version_comparison} -ne 1 ]]; then
         fzf_args+=(
-            --input-border --input-label=' Search ' --info=inline-right
+            --input-border --input-label=' Search (? for help) ' --info=inline-right
             --list-border --list-label=' Tmux '
             --preview-border --preview-label=' Preview '
         )
@@ -96,8 +96,15 @@ function select_pane() {
     }
     export -f _fzj_list
 
+    local full_hdr='  ctrl-x : kill\n  ctrl-r : rename\n  ctrl-n : new\n  ctrl-d : detach\n  ctrl-p : toggle preview\n  ?      : close'
+    local short_hdr=''
+    [[ "${has_border_styling}" = false ]] && short_hdr='  ctrl-p: preview  ?: help'
+    local _help_state
+    _help_state=$(mktemp)
+
+    [[ -n "${short_hdr}" ]] && fzf_args+=(--header "${short_hdr}")
     fzf_args+=(
-        --header $'  ctrl-x: kill  ctrl-r: rename  ctrl-n: new  ctrl-d: detach\n  ctrl-p: toggle preview'
+        --bind "?:transform(if [ \"\$(cat '${_help_state}')\" = 1 ]; then echo 0 > '${_help_state}'; echo 'change-header(${short_hdr})'; else echo 1 > '${_help_state}'; echo 'change-header(${full_hdr})'; fi)"
         --bind $'ctrl-x:execute-silent(t={1}; case $t in \\$*) tmux kill-session -t "$t";; %*) tmux kill-pane -t "$t";; *) tmux kill-window -t "$t";; esac)+reload(bash -c _fzj_list)'
         --bind $'ctrl-r:execute(t={1}; case $t in \\$*) cur=$(tmux display-message -p -t "$t" \'#{session_name}\'); printf "Rename session [%s]: " "$cur"; read -r n; [ -n "$n" ] && tmux rename-session -t "$t" "$n";; %*) cur=$(tmux display-message -p -t "$t" \'#{pane_title}\'); printf "Rename pane [%s]: " "$cur"; read -r n; [ -n "$n" ] && tmux select-pane -t "$t" -T "$n";; *) cur=$(tmux display-message -p -t "$t" \'#{window_name}\'); printf "Rename window [%s]: " "$cur"; read -r n; [ -n "$n" ] && tmux rename-window -t "$t" "$n";; esac)+reload(bash -c _fzj_list)'
         --bind $'ctrl-n:execute(t={1}; case $t in \\$*) printf "New session name: "; read -r n; [ -n "$n" ] && tmux new-session -d -s "$n";; %*) win=$(tmux display-message -p -t "$t" \'#{session_name}:#{window_index}\'); tmux split-window -t "$win" -d;; *) sess=${t%%:*}; printf "New window name: "; read -r n; if [ -n "$n" ]; then tmux new-window -t "$sess:" -n "$n" -d; else tmux new-window -t "$sess:" -d; fi;; esac)+reload(bash -c _fzj_list)'
@@ -110,6 +117,7 @@ function select_pane() {
         SHELL=/bin/sh fzf "${fzf_args[@]}" |
         tail -1
     )
+    rm -f "${_help_state}"
 
     target=$(echo "${pane}" | awk '{print $1}')
 
