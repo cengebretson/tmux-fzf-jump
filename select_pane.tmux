@@ -40,8 +40,18 @@ get_tmux_option() {
     fi
 }
 
+shell_quote() {
+    local value="${1}"
+    printf "'"
+    while [[ "${value}" == *"'"* ]]; do
+        printf "%s'\\\\''" "${value%%\'*}"
+        value="${value#*\'}"
+    done
+    printf "%s'" "${value}"
+}
+
 set_switch_pane_bindings() {
-    local bind_key preview_pane fzf_window_position fzf_preview_window_position
+    local bind_key preview_pane fzf_window_position fzf_preview_window_position command
     local session_icon window_icon pane_icon indent separator highlight_color activity_color
     bind_key="$(get_tmux_option "${tmux_bind_key}" "${default_bind_key}")"
     preview_pane="$(get_tmux_option "${tmux_preview_pane}" "${default_preview_pane}")"
@@ -55,8 +65,19 @@ set_switch_pane_bindings() {
     highlight_color="$(get_tmux_option "${tmux_highlight_color}" "${default_highlight_color}")"
     activity_color="$(get_tmux_option "${tmux_activity_color}" "${default_activity_color}")"
 
-    tmux bind-key "${bind_key}" run-shell \
-        "'${CURRENT_DIR}/select_pane.sh' '${preview_pane}' '${fzf_window_position}' '${fzf_preview_window_position}' '${session_icon}' '${window_icon}' '${pane_icon}' '${indent}' '${separator}' '${highlight_color}' '${activity_color}'"
+    command="$(shell_quote "${CURRENT_DIR}/select_pane.sh")"
+    command+=" $(shell_quote "${preview_pane}")"
+    command+=" $(shell_quote "${fzf_window_position}")"
+    command+=" $(shell_quote "${fzf_preview_window_position}")"
+    command+=" $(shell_quote "${session_icon}")"
+    command+=" $(shell_quote "${window_icon}")"
+    command+=" $(shell_quote "${pane_icon}")"
+    command+=" $(shell_quote "${indent}")"
+    command+=" $(shell_quote "${separator}")"
+    command+=" $(shell_quote "${highlight_color}")"
+    command+=" $(shell_quote "${activity_color}")"
+
+    tmux bind-key "${bind_key}" run-shell "${command}"
 }
 
 set_switch_pane_bindings

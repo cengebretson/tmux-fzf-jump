@@ -63,6 +63,7 @@ Press `<prefix> + j` (the default key binding) to open the switcher. Type to fuz
 | `ctrl-d` | Detach all clients from selected session |
 | `ctrl-x` | Kill selected session / window / pane |
 | `ctrl-p` | Toggle preview pane |
+| `?` | Toggle key binding help |
 
 ## Configuration
 

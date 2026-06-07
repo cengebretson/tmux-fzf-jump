@@ -11,7 +11,7 @@ A tmux plugin (TPM-compatible) that lets users switch to any session, window, or
 
 ## How the two scripts connect
 
-`select_pane.tmux` passes six positional arguments to `select_pane.sh`:
+`select_pane.tmux` passes ten shell-quoted positional arguments to `select_pane.sh`:
 
 1. `preview_pane` (`true`/`false`)
 2. `fzf_window_position` (passed to `fzf --tmux`)
@@ -19,8 +19,12 @@ A tmux plugin (TPM-compatible) that lets users switch to any session, window, or
 4. `session_icon` (Nerd Font icon for session entries)
 5. `window_icon` (Nerd Font icon for window entries)
 6. `pane_icon` (Nerd Font icon for pane entries)
+7. `indent` (prepended once for windows, twice for panes)
+8. `separator` (shown between session/window/pane names)
+9. `highlight_color` (RGB triplet for the current item)
+10. `activity_color` (RGB triplet for unread activity indicators)
 
-`select_pane.sh` combines output from `tmux list-sessions`, `tmux list-windows -a`, and `tmux list-panes -a` into a single fzf list. Each line's first field (hidden via `--with-nth=2..`) is the tmux target passed to `tmux switch-client -t`: a session ID (`$0`), window target (`session:index`), or pane ID (`%4`).
+`select_pane.sh` combines output from `tmux list-sessions`, `tmux list-windows -a`, and `tmux list-panes -a` into a single fzf list. Each line's first field (hidden via `--with-nth=2..`) is the tmux target passed to `tmux switch-client -t`: a session ID (`$0`), window ID (`@1`), or pane ID (`%4`).
 
 ## Testing
 
@@ -31,10 +35,10 @@ There is no automated test suite. Test manually inside a live tmux session:
 tmux source-file ~/.tmux.conf
 
 # Or invoke select_pane.sh directly for quick iteration
-bash select_pane.sh true center,70%,80% right,,,nowrap '󰐱' '󰖲' '󰘗'
+bash select_pane.sh true center,70%,80% right,,,nowrap '󰐱' '󰖲' '󰆍' '▪  ' '/' '166;227;161' '249;226;175'
 
 # Without Nerd Fonts
-bash select_pane.sh true center,70%,80% right,,,nowrap 'S' 'W' 'P'
+bash select_pane.sh true center,70%,80% right,,,nowrap 'S' 'W' 'P' '  ' '/' '166;227;161' '249;226;175'
 ```
 
 ## Version-gated fzf features
