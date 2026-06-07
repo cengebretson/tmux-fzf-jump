@@ -4,7 +4,7 @@
 
 ![Demonstration of tmux-fzf-pane-switch in action](assets/demo.gif)
 
-Switch to any tmux session, window, or pane using fzf. The list is grouped hierarchically — sessions at the top (sorted by most recently used), windows beneath their session, and panes beneath their window (only shown when a window has more than one pane). Windows and panes with unread activity are marked with a `●` indicator, and panes show the current working directory and running command alongside their name.
+Switch to any tmux session, window, or pane using fzf. The list is grouped hierarchically — sessions at the top (sorted by most recently used), windows beneath their session, and panes beneath their window (only shown when a window has more than one pane). Windows and panes with unread activity are marked with a `●` indicator, optional [tmux-attention](https://github.com/cengebretson/tmux-attention) states are shown with their configured icons, and panes show the current working directory and running command alongside their name.
 
 ## Requirements
 
@@ -162,6 +162,31 @@ Colors are specified as RGB triplets in the form `R;G;B` (used in ANSI 24-bit co
 ```bash
 set -g @fzf_pane_switch_highlight-color "166;227;161"  # current item (default: Catppuccin green)
 set -g @fzf_pane_switch_activity-color  "249;226;175"  # activity dot (default: Catppuccin yellow)
+```
+
+### tmux-attention integration
+
+If [tmux-attention](https://github.com/cengebretson/tmux-attention) is installed and has set a window's `@agent_attention` option, matching status icons are shown on that window and its panes. The integration is optional; when `@agent_attention` is empty, nothing extra is rendered.
+
+The supported states are `input`, `blocked`, `review`, and `done`. Icon overrides are read from tmux-attention's existing options:
+
+```bash
+set -g @tmux_attention_icon_input   "󱐋"
+set -g @tmux_attention_icon_blocked ""
+set -g @tmux_attention_icon_review  "󰛨"
+set -g @tmux_attention_icon_done    ""
+```
+
+You can preview representative rows from the repository without creating tmux sessions:
+
+```bash
+./select_pane.sh --fixture
+```
+
+Or inspect the same rows through fzf:
+
+```bash
+./select_pane.sh --fixture-fzf
 ```
 
 ## Demo setup
