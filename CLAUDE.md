@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A tmux plugin (TPM-compatible) that lets users switch to any session, window, or pane across all sessions using fzf as a fuzzy finder. Two files do all the work:
 
-- `select_pane.tmux` — sourced by tmux at startup; reads user config options via `tmux show-option`, then registers a key binding that calls `select_pane.sh` with the resolved options as arguments.
+- `select_pane.tmux` — run by tmux with `run-shell`; reads user config options via `tmux show-option`, then registers a key binding that calls `select_pane.sh` with the resolved options as arguments. This file is Bash, not tmux config, so do not load it with `tmux source-file`.
 - `select_pane.sh` — invoked by tmux when the key binding fires; builds a combined list of sessions, windows, and panes, runs fzf, then switches to the selected target via `tmux switch-client`.
 
 ## How the two scripts connect
@@ -30,7 +30,15 @@ If the optional `tmux-attention` plugin is installed, `select_pane.sh` also read
 
 ## Testing
 
-There is no automated test suite. Test manually inside a live tmux session:
+Run the smoke test before changing behavior:
+
+```bash
+tests/check.sh
+```
+
+The check script runs ShellCheck, Bash syntax validation, fixture assertions, and an isolated tmux server check that verifies `prefix + j` is bound through `run-shell`.
+
+For manual testing inside a live tmux session:
 
 ```bash
 # Reload the plugin after changes

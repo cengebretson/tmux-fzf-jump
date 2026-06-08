@@ -189,11 +189,25 @@ Or inspect the same rows through fzf:
 ./select_pane.sh --fixture-fzf
 ```
 
+## Testing
+
+Run the smoke checks before changing behavior:
+
+```bash
+tests/check.sh
+```
+
+The script runs ShellCheck, Bash syntax validation, fixture assertions, and an isolated tmux binding check.
+
 ## Demo setup
 
 * tmux theme: [catppuccin](https://github.com/catppuccin/tmux) mocha.
 * Shell prompt: [starship](https://starship.rs).
 * fzf theme: [catppuccin](https://github.com/catppuccin/fzf) mocha.
+
+## Related projects
+
+* [tmux-attention](https://github.com/cengebretson/tmux-attention) — a companion tmux plugin for marking windows that need attention.
 
 ## Origins
 

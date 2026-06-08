@@ -15,6 +15,16 @@ default_attention_icon_blocked=''
 default_attention_icon_review='󰛨'
 default_attention_icon_done=''
 
+function shell_quote() {
+    local value="${1}"
+    printf "'"
+    while [[ "${value}" == *"'"* ]]; do
+        printf "%s'\\''" "${value%%\'*}"
+        value="${value#*\'}"
+    done
+    printf "%s'" "${value}"
+}
+
 function get_tmux_option() {
     local option="${1}"
     local default_value="${2}"
@@ -128,14 +138,16 @@ function select_pane() {
     [[ "${has_border_styling}" = false ]] && short_hdr='  ctrl-p: preview  ?: help'
     local _help_state
     _help_state=$(mktemp)
+    local action_cmd
+    action_cmd="$(shell_quote "${BASH_SOURCE[0]}") --action"
 
     [[ -n "${short_hdr}" ]] && fzf_args+=(--header "${short_hdr}")
     fzf_args+=(
         --bind "?:transform(if [ \"\$(cat '${_help_state}')\" = 1 ]; then echo 0 > '${_help_state}'; echo 'change-header(${short_hdr})'; else echo 1 > '${_help_state}'; echo 'change-header(${full_hdr})'; fi)"
-        --bind $'ctrl-x:execute-silent(t={1}; case $t in \\$*) tmux kill-session -t "$t";; %*) tmux kill-pane -t "$t";; *) tmux kill-window -t "$t";; esac)+reload(bash -c _fzj_list)'
-        --bind $'ctrl-r:execute(t={1}; case $t in \\$*) cur=$(tmux display-message -p -t "$t" \'#{session_name}\'); printf "Rename session [%s]: " "$cur"; read -r n; [ -n "$n" ] && tmux rename-session -t "$t" "$n";; %*) cur=$(tmux display-message -p -t "$t" \'#{pane_title}\'); printf "Rename pane [%s]: " "$cur"; read -r n; [ -n "$n" ] && tmux select-pane -t "$t" -T "$n";; *) cur=$(tmux display-message -p -t "$t" \'#{window_name}\'); printf "Rename window [%s]: " "$cur"; read -r n; [ -n "$n" ] && tmux rename-window -t "$t" "$n";; esac)+reload(bash -c _fzj_list)'
-        --bind $'ctrl-n:execute(t={1}; case $t in \\$*) printf "New session name: "; read -r n; [ -n "$n" ] && tmux new-session -d -s "$n";; %*) win=$(tmux display-message -p -t "$t" \'#{session_name}:#{window_index}\'); tmux split-window -t "$win" -d;; *) sess=$(tmux display-message -p -t "$t" \'#{session_name}\'); printf "New window name: "; read -r n; if [ -n "$n" ]; then tmux new-window -t "$sess:" -n "$n" -d; else tmux new-window -t "$sess:" -d; fi;; esac)+reload(bash -c _fzj_list)'
-        --bind $'ctrl-d:execute-silent(t={1}; case $t in \\$*) tmux detach-client -s "$t";; esac)+reload(bash -c _fzj_list)'
+        --bind "ctrl-x:execute-silent(${action_cmd} kill {1})+reload(bash -c _fzj_list)"
+        --bind "ctrl-r:execute(${action_cmd} rename {1})+reload(bash -c _fzj_list)"
+        --bind "ctrl-n:execute(${action_cmd} new {1})+reload(bash -c _fzj_list)"
+        --bind "ctrl-d:execute-silent(${action_cmd} detach {1})+reload(bash -c _fzj_list)"
         --bind 'ctrl-p:toggle-preview'
     )
 
@@ -155,6 +167,98 @@ function select_pane() {
         *)
             tmux switch-client -t "${current_pane}"
             ;;
+    esac
+}
+
+function target_type() {
+    local target="${1}"
+    case "${target}" in
+        \$*) printf "session\n" ;;
+        %*) printf "pane\n" ;;
+        @*) printf "window\n" ;;
+        *) printf "unknown\n" ;;
+    esac
+}
+
+function action_kill() {
+    local target="${1}"
+    case "$(target_type "${target}")" in
+        session) tmux kill-session -t "${target}" ;;
+        pane) tmux kill-pane -t "${target}" ;;
+        window) tmux kill-window -t "${target}" ;;
+    esac
+}
+
+function action_rename() {
+    local target="${1}"
+    local current_name new_name
+
+    case "$(target_type "${target}")" in
+        session)
+            current_name=$(tmux display-message -p -t "${target}" '#{session_name}')
+            printf "Rename session [%s]: " "${current_name}"
+            read -r new_name
+            [[ -n "${new_name}" ]] && tmux rename-session -t "${target}" "${new_name}"
+            ;;
+        pane)
+            current_name=$(tmux display-message -p -t "${target}" '#{pane_title}')
+            printf "Rename pane [%s]: " "${current_name}"
+            read -r new_name
+            [[ -n "${new_name}" ]] && tmux select-pane -t "${target}" -T "${new_name}"
+            ;;
+        window)
+            current_name=$(tmux display-message -p -t "${target}" '#{window_name}')
+            printf "Rename window [%s]: " "${current_name}"
+            read -r new_name
+            [[ -n "${new_name}" ]] && tmux rename-window -t "${target}" "${new_name}"
+            ;;
+    esac
+}
+
+function action_new() {
+    local target="${1}"
+    local session_name window_target new_name
+
+    case "$(target_type "${target}")" in
+        session)
+            printf "New session name: "
+            read -r new_name
+            [[ -n "${new_name}" ]] && tmux new-session -d -s "${new_name}"
+            ;;
+        pane)
+            window_target=$(tmux display-message -p -t "${target}" '#{session_name}:#{window_index}')
+            tmux split-window -t "${window_target}" -d
+            ;;
+        window)
+            session_name=$(tmux display-message -p -t "${target}" '#{session_name}')
+            printf "New window name: "
+            read -r new_name
+            if [[ -n "${new_name}" ]]; then
+                tmux new-window -t "${session_name}:" -n "${new_name}" -d
+            else
+                tmux new-window -t "${session_name}:" -d
+            fi
+            ;;
+    esac
+}
+
+function action_detach() {
+    local target="${1}"
+    [[ "$(target_type "${target}")" = "session" ]] && tmux detach-client -s "${target}"
+}
+
+function run_action() {
+    local action="${1}"
+    local target="${2}"
+
+    [[ -n "${target}" ]] || return 0
+
+    case "${action}" in
+        kill) action_kill "${target}" ;;
+        rename) action_rename "${target}" ;;
+        new) action_new "${target}" ;;
+        detach) action_detach "${target}" ;;
+        *) return 1 ;;
     esac
 }
 
@@ -208,8 +312,13 @@ if [[ "${1}" == '--fixture-fzf' ]]; then
     exit
 fi
 
-# Check for required commands
 command -v tmux >/dev/null 2>&1 || { echo "tmux not found"; exit 1; }
+
+if [[ "${1}" == '--action' ]]; then
+    run_action "${2}" "${3}"
+    exit
+fi
+
 command -v fzf >/dev/null 2>&1 || { echo "fzf not found"; exit 1; }
 
 if [[ "${1}" == '--test' ]]; then
