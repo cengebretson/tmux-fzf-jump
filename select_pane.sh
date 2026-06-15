@@ -1,19 +1,10 @@
 #!/usr/bin/env bash
 
-default_preview_pane='true'
-default_fzf_window_position='center,70%,80%'
-default_fzf_preview_window_position='right,,,nowrap'
-default_session_icon='󰐱'
-default_window_icon='󰖲'
-default_pane_icon='󰆍'
-default_indent='▪  '
-default_separator='/'
-default_highlight_color='166;227;161'
-default_activity_color='249;226;175'
-default_attention_icon_input='󱐋'
-default_attention_icon_blocked=''
-default_attention_icon_review='󰛨'
-default_attention_icon_done=''
+_FZJ_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Default values (shared with select_pane.tmux)
+# shellcheck source=defaults.sh
+source "${_FZJ_DIR}/defaults.sh"
 
 function shell_quote() {
     local value="${1}"
@@ -28,12 +19,12 @@ function shell_quote() {
 function get_tmux_option() {
     local option="${1}"
     local default_value="${2}"
-    local option_override
-    option_override="$(tmux show-option -gqv "${option}")"
-    if [[ -z "${option_override}" ]]; then
-        printf "%s\n" "${default_value}"
+    # `show-option -gq <name>` prints a line only when the option is set, which
+    # lets us tell "set to empty" apart from "unset" (both yield empty -gqv).
+    if [[ -n "$(tmux show-option -gq "${option}")" ]]; then
+        tmux show-option -gqv "${option}"
     else
-        printf "%s\n" "${option_override}"
+        printf "%s\n" "${default_value}"
     fi
 }
 
@@ -103,18 +94,18 @@ function select_pane() {
                 awk -F'\t' -v icon="${_FZJ_SI}" -v cur="${cs}" -v hc="${_FZJ_HC}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
-                    printf "%010d:00000:00000:0 %s %s%s %s  %s%s\n", ts, $3, b, icon, $2, ($4==1?"":$4" windows"), r
+                    printf "%010d:%s:00000:00000:0 %s %s%s %s  %s%s\n", ts, $3, $3, b, icon, $2, ($4==1?"":$4" windows"), r
                 }'
-            tmux list-windows -aF $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}' | \
+            tmux list-windows -aF $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}' | \
                 awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '$7 > 1 {
                     ts = 9999999999 - $1
                     b = ($2==cur_s && $3==cur_w) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
                     act = ($8=="1") ? " \033[38;2;" ac "m●\033[0m" : ""
                     att = ($9=="input") ? ai : (($9=="blocked") ? ab : (($9=="review") ? ar : (($9=="done") ? ad : "")))
                     att = (att=="") ? "" : " \033[38;2;" ac "m" att "\033[0m"
-                    printf "%010d:%05d:00000:1 %s %s%s %s %s %s  %s%s%s%s\n", ts, $3, $4, b, icon, $2, sep, $5, ($6==1?"":$6" panes"), r, act, att
+                    printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s  %s%s%s%s\n", ts, $10, $3, $4, b, icon, $2, sep, $5, ($6==1?"":$6" panes"), r, act, att
                 }'
-            tmux list-panes -aF $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{pane_title}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}' | \
+            tmux list-panes -aF $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{pane_title}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}\t#{session_id}' | \
                 awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_IN}${_FZJ_PI}" -v sep="${_FZJ_SEP}" -v cur="${cp}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v home="${HOME}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '$8 > 1 {
                     ts = 9999999999 - $1
                     b = ($5==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
@@ -127,7 +118,7 @@ function select_pane() {
                     n = split(p, parts, "/")
                     if (n <= 2) short_path = p
                     else { prefix = (parts[1] == "~") ? "~/" : ""; short_path = prefix parts[n-1] "/" parts[n] }
-                    printf "%010d:%05d:%05d:2 %s %s%s %s %s %s %s %s%s%s%s%s\n", ts, $3, $4, $5, b, icon, $2, sep, $6, sep, short_path, cmd, r, act, att
+                    printf "%010d:%s:%05d:%05d:2 %s %s%s %s %s %s %s %s%s%s%s%s\n", ts, $13, $3, $4, $5, b, icon, $2, sep, $6, sep, short_path, cmd, r, act, att
                 }'
         } | sort | cut -d' ' -f2-
     }
@@ -138,6 +129,8 @@ function select_pane() {
     [[ "${has_border_styling}" = false ]] && short_hdr='  ctrl-p: preview  ?: help'
     local _help_state
     _help_state=$(mktemp)
+    # shellcheck disable=SC2064  # bake the path in now; the var is local
+    trap "rm -f '${_help_state}'" EXIT INT TERM
     local action_cmd
     action_cmd="$(shell_quote "${BASH_SOURCE[0]}") --action"
 
@@ -161,8 +154,15 @@ function select_pane() {
     target=$(echo "${pane}" | awk '{print $1}')
 
     case "${target}" in
-        \$*|@*|%*)
+        \$*|@*)
             tmux switch-client -t "${target}"
+            ;;
+        %*)
+            # switch-client moves to the pane's session; select-window and
+            # select-pane ensure focus lands on that exact pane.
+            tmux switch-client -t "${target}"
+            tmux select-window -t "${target}"
+            tmux select-pane -t "${target}"
             ;;
         *)
             tmux switch-client -t "${current_pane}"
@@ -301,6 +301,11 @@ function print_fixture() {
     printf "\$2 %s archive  1 window\n" "${session_icon}"
     printf "@4 %s archive%s done 1 pane  %s%s%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_done}" "${reset}"
 }
+
+if [[ "${1}" == '--version' ]]; then
+    cat "${_FZJ_DIR}/VERSION"
+    exit
+fi
 
 if [[ "${1}" == '--fixture' ]]; then
     print_fixture

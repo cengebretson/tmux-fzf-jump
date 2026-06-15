@@ -4,10 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A tmux plugin (TPM-compatible) that lets users switch to any session, window, or pane across all sessions using fzf as a fuzzy finder. Two files do all the work:
+A tmux plugin (TPM-compatible) that lets users switch to any session, window, or pane across all sessions using fzf as a fuzzy finder. Two scripts do the work, backed by a shared defaults file:
 
 - `select_pane.tmux` — run by tmux with `run-shell`; reads user config options via `tmux show-option`, then registers a key binding that calls `select_pane.sh` with the resolved options as arguments. This file is Bash, not tmux config, so do not load it with `tmux source-file`.
 - `select_pane.sh` — invoked by tmux when the key binding fires; builds a combined list of sessions, windows, and panes, runs fzf, then switches to the selected target via `tmux switch-client`.
+- `defaults.sh` — single source of truth for the `default_*` option values, sourced by both scripts. Edit defaults here, not in the consuming scripts.
+
+`get_tmux_option` distinguishes a set-but-empty option from an unset one (via `tmux show-option -gq`), so an option explicitly set to `""` overrides the default instead of falling back to it.
 
 ## How the two scripts connect
 
@@ -36,7 +39,7 @@ Run the smoke test before changing behavior:
 tests/check.sh
 ```
 
-The check script runs ShellCheck, Bash syntax validation, fixture assertions, and an isolated tmux server check that verifies `prefix + j` is bound through `run-shell`.
+The check script runs ShellCheck, Bash syntax validation, the `--version` check, fixture assertions, and an isolated tmux server check that verifies `prefix + j` is bound through `run-shell` (including that an option set to `""` overrides its default). The same checks run in CI (`.github/workflows/ci.yml`) on every push and pull request.
 
 For manual testing inside a live tmux session:
 
@@ -57,4 +60,8 @@ bash select_pane.sh true center,70%,80% right,,,nowrap 'S' 'W' 'P' '  ' '/' '166
 
 ## Configurable tmux options
 
-All user-facing options use the prefix `@fzf_pane_switch_` and are read with `get_tmux_option` in `select_pane.tmux`. The defaults are defined as `default_*` variables at the top of that file.
+All user-facing options use the prefix `@fzf_pane_switch_` and are read with `get_tmux_option` in `select_pane.tmux`. The defaults are the `default_*` variables in `defaults.sh`.
+
+## Versioning and releases
+
+SemVer, tracked in `CHANGELOG.md`; the current version lives in `VERSION` and is printable via `select_pane.sh --version`. Cut a release with `scripts/release.sh <x.y.z>` (bumps `VERSION`, promotes the changelog `[Unreleased]` section, runs the checks, commits, and tags). Pushing a `v*` tag triggers `.github/workflows/release.yml`, which re-runs the checks, verifies the tag matches `VERSION`, and publishes a GitHub release from that version's changelog section.

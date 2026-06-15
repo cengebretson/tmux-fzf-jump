@@ -2,18 +2,9 @@
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Default values
-default_bind_key='j'
-default_preview_pane='true'
-default_fzf_window_position='center,70%,80%'
-default_fzf_preview_window_position='right,,,nowrap'
-default_session_icon='󰐱'
-default_window_icon='󰖲'
-default_pane_icon='󰆍'
-default_indent='▪  '
-default_separator='/'
-default_highlight_color='166;227;161'
-default_activity_color='249;226;175'
+# Default values (shared with select_pane.sh)
+# shellcheck source=defaults.sh
+source "${CURRENT_DIR}/defaults.sh"
 
 # User overridable options
 tmux_bind_key="@fzf_pane_switch_bind-key"
@@ -31,12 +22,12 @@ tmux_activity_color="@fzf_pane_switch_activity-color"
 get_tmux_option() {
     local option="${1}"
     local default_value="${2}"
-    local option_override
-    option_override="$(tmux show-option -gqv "${option}")"
-    if [ -z "${option_override}" ]; then
-        echo "${default_value}"
+    # `show-option -gq <name>` prints a line only when the option is set, which
+    # lets us tell "set to empty" apart from "unset" (both yield empty -gqv).
+    if [ -n "$(tmux show-option -gq "${option}")" ]; then
+        tmux show-option -gqv "${option}"
     else
-        echo "${option_override}"
+        echo "${default_value}"
     fi
 }
 

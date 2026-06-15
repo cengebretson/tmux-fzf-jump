@@ -9,7 +9,7 @@ Switch to any tmux session, window, or pane using fzf. The list is grouped hiera
 ## Requirements
 
 * [fzf](https://github.com/junegunn/fzf) >= 0.53.0 (requires `--tmux`; >= 0.58.0 for border styling as shown above).
-* [tmux](https://github.com/tmux/tmux) >= 3.3.
+* [tmux](https://github.com/tmux/tmux) >= 3.4 (uses `#{pane_unseen_changes}`).
 * A [Nerd Font](https://www.nerdfonts.com/) for the default icons (configurable — see below).
 
 ## Installation
@@ -197,7 +197,24 @@ Run the smoke checks before changing behavior:
 tests/check.sh
 ```
 
-The script runs ShellCheck, Bash syntax validation, fixture assertions, and an isolated tmux binding check.
+The script runs ShellCheck, Bash syntax validation, fixture assertions, and an isolated tmux binding check. The same checks run in CI on every push and pull request.
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org). Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md), and the installed version can be printed with:
+
+```bash
+./select_pane.sh --version
+```
+
+Releases are cut with the helper script, which bumps the `VERSION` file, promotes the changelog's `[Unreleased]` section, runs the smoke checks, and creates an annotated tag:
+
+```bash
+scripts/release.sh 2.1.0
+git push origin main --follow-tags
+```
+
+Pushing a `v*` tag triggers the release workflow, which re-runs the checks and publishes a GitHub release using that version's changelog section as the notes.
 
 ## Demo setup
 
