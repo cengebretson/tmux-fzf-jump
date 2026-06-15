@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-06-15
+
 ### Added
 
 - tmux-attention integration: `input`, `blocked`, `review`, and `done` state icons shown on windows and panes (`@agent_attention`).
@@ -35,5 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Baseline release of the fzf-based session/window/pane switcher.
 
-[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/cengebretson/tmux-fzf-jump/releases/tag/v2.0.0
