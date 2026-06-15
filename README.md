@@ -207,14 +207,14 @@ This project follows [Semantic Versioning](https://semver.org). Notable changes 
 ./select_pane.sh --version
 ```
 
-Releases are cut with the helper script, which bumps the `VERSION` file, promotes the changelog's `[Unreleased]` section, runs the smoke checks, and creates an annotated tag:
+To cut a release, move the changelog's `[Unreleased]` entries under a new `## [x.y.z]` heading, set the matching value in `VERSION`, then tag and push:
 
 ```bash
-scripts/release.sh 2.1.0
+git tag -a v2.1.0 -m v2.1.0
 git push origin main --follow-tags
 ```
 
-Pushing a `v*` tag triggers the release workflow, which re-runs the checks and publishes a GitHub release using that version's changelog section as the notes.
+Pushing a `v*` tag triggers the release workflow, which re-runs the checks, verifies the tag matches `VERSION`, and publishes a GitHub release using that version's changelog section as the notes.
 
 ## Demo setup
 

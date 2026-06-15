@@ -64,4 +64,4 @@ All user-facing options use the prefix `@fzf_pane_switch_` and are read with `ge
 
 ## Versioning and releases
 
-SemVer, tracked in `CHANGELOG.md`; the current version lives in `VERSION` and is printable via `select_pane.sh --version`. Cut a release with `scripts/release.sh <x.y.z>` (bumps `VERSION`, promotes the changelog `[Unreleased]` section, runs the checks, commits, and tags). Pushing a `v*` tag triggers `.github/workflows/release.yml`, which re-runs the checks, verifies the tag matches `VERSION`, and publishes a GitHub release from that version's changelog section.
+SemVer, tracked in `CHANGELOG.md`; the current version lives in `VERSION` and is printable via `select_pane.sh --version`. Cut a release with the maintainer's `git release <x.y.z>` helper (bumps `VERSION`, promotes the changelog `[Unreleased]` section, runs the checks, commits, and tags) — or do those steps by hand. Pushing a `v*` tag triggers `.github/workflows/release.yml`, which re-runs the checks, verifies the tag matches `VERSION`, and publishes a GitHub release from that version's changelog section.

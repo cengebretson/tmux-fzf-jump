@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-shellcheck select_pane.sh select_pane.tmux defaults.sh scripts/release.sh
-bash -n select_pane.sh select_pane.tmux defaults.sh scripts/release.sh
+shellcheck select_pane.sh select_pane.tmux defaults.sh
+bash -n select_pane.sh select_pane.tmux defaults.sh
 grep -q -- '--action' select_pane.sh
 
 test "$(./select_pane.sh --version)" = "$(cat VERSION)"
