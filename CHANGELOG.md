@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Releases are now cut with the shared `git release` command; the in-repo `scripts/release.sh` was removed (the release process is otherwise unchanged).
+
 ## [2.1.0] - 2026-06-15
 
 ### Added
