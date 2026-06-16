@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-06-16
+
 ### Fixed
 
 - A single-window session now lists its window row in the picker instead of
@@ -51,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Baseline release of the fzf-based session/window/pane switcher.
 
-[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.2...HEAD
+[2.1.2]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/cengebretson/tmux-fzf-jump/releases/tag/v2.0.0
