@@ -96,8 +96,12 @@ function select_pane() {
                     b = ($2==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
                     printf "%010d:%s:00000:00000:0 %s %s%s %s  %s%s\n", ts, $3, $3, b, icon, $2, ($4==1?"":$4" windows"), r
                 }'
+            # Always list every window beneath its session — including the sole
+            # window of a single-window session — so its activity and
+            # tmux-attention marker are never hidden. (Panes below still collapse
+            # when a window has only one.)
             tmux list-windows -aF $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}' | \
-                awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '$7 > 1 {
+                awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur_s && $3==cur_w) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
                     act = ($8=="1") ? " \033[38;2;" ac "m●\033[0m" : ""

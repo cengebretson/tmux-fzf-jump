@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A single-window session now lists its window row in the picker instead of
+  collapsing into just the session row. This restores the documented "windows
+  beneath their session" behavior (only panes collapse on count) and, crucially,
+  stops a single-window session's `tmux-attention` marker and activity indicator
+  from being hidden.
+
 ## [2.1.1] - 2026-06-15
 
 ### Changed

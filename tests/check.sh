@@ -16,6 +16,10 @@ grep -q '^@1 ' <<< "${fixture_output}"
 grep -q '^%1 ' <<< "${fixture_output}"
 grep -q 'workspace' <<< "${fixture_output}"
 grep -q 'archive' <<< "${fixture_output}"
+# A single-window session ($2 'archive') still lists its window row (@4), so a
+# window's activity/attention marker is never hidden by single-window collapse.
+grep -q '^\$2 ' <<< "${fixture_output}"
+grep -q '^@4 ' <<< "${fixture_output}"
 
 if command -v tmux >/dev/null 2>&1; then
     socket_path="/tmp/tmux-fzj-check-$$"
