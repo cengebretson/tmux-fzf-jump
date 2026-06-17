@@ -61,7 +61,7 @@ Press `<prefix> + j` (the default key binding) to open the switcher. Type to fuz
 | `ctrl-n` | New session / window / pane (context-sensitive) |
 | `ctrl-r` | Rename selected session / window / pane |
 | `ctrl-d` | Detach all clients from selected session |
-| `ctrl-x` | Kill selected session / window / pane |
+| `ctrl-x` | Kill selected session / window / pane after confirmation |
 | `ctrl-p` | Toggle preview pane |
 | `?` | Toggle key binding help |
 

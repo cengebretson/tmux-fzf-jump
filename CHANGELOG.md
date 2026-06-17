@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Prompt for confirmation before killing a selected session, window, or pane
+  from the picker.
+- Validate direct `select_pane.sh` arguments and default no-argument
+  invocation to the standard picker options.
+- Require and validate `fzf` in CI/release smoke checks, and cover the
+  in-picker action dispatcher against an isolated tmux server.
+
 ## [2.1.2] - 2026-06-16
 
 ### Fixed

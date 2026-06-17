@@ -141,7 +141,7 @@ function select_pane() {
     [[ -n "${short_hdr}" ]] && fzf_args+=(--header "${short_hdr}")
     fzf_args+=(
         --bind "?:transform(if [ \"\$(cat '${_help_state}')\" = 1 ]; then echo 0 > '${_help_state}'; echo 'change-header(${short_hdr})'; else echo 1 > '${_help_state}'; echo 'change-header(${full_hdr})'; fi)"
-        --bind "ctrl-x:execute-silent(${action_cmd} kill {1})+reload(bash -c _fzj_list)"
+        --bind "ctrl-x:execute(${action_cmd} kill {1})+reload(bash -c _fzj_list)"
         --bind "ctrl-r:execute(${action_cmd} rename {1})+reload(bash -c _fzj_list)"
         --bind "ctrl-n:execute(${action_cmd} new {1})+reload(bash -c _fzj_list)"
         --bind "ctrl-d:execute-silent(${action_cmd} detach {1})+reload(bash -c _fzj_list)"
@@ -186,7 +186,23 @@ function target_type() {
 
 function action_kill() {
     local target="${1}"
-    case "$(target_type "${target}")" in
+    local type
+    type="$(target_type "${target}")"
+
+    case "${type}" in
+        session|window|pane) ;;
+        *) return 1 ;;
+    esac
+
+    printf "Kill %s %s? [y/N]: " "${type}" "${target}"
+    local confirm
+    read -r confirm
+    case "${confirm}" in
+        y|Y|yes|YES) ;;
+        *) return 0 ;;
+    esac
+
+    case "${type}" in
         session) tmux kill-session -t "${target}" ;;
         pane) tmux kill-pane -t "${target}" ;;
         window) tmux kill-window -t "${target}" ;;
@@ -266,6 +282,17 @@ function run_action() {
     esac
 }
 
+function usage() {
+    cat <<EOF
+Usage:
+  ${0##*/} [--version|--fixture|--fixture-fzf|--test]
+  ${0##*/} --action <kill|rename|new|detach> <target>
+  ${0##*/} <preview-pane> <fzf-window-position> <preview-window-position> <session-icon> <window-icon> <pane-icon> <indent> <separator> <highlight-color> <activity-color>
+
+Run with no arguments to use the default picker options.
+EOF
+}
+
 function vercomp() {
   local v1="$1"
   local v2="$2"
@@ -306,47 +333,67 @@ function print_fixture() {
     printf "@4 %s archive%s done 1 pane  %s%s%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_done}" "${reset}"
 }
 
-if [[ "${1}" == '--version' ]]; then
+if [[ "${1:-}" == '--version' ]]; then
     cat "${_FZJ_DIR}/VERSION"
     exit
 fi
 
-if [[ "${1}" == '--fixture' ]]; then
+if [[ "${1:-}" == '--fixture' ]]; then
     print_fixture
     exit
 fi
 
-if [[ "${1}" == '--fixture-fzf' ]]; then
+if [[ "${1:-}" == '--fixture-fzf' ]]; then
     print_fixture | fzf --ansi --with-nth=2.. --reverse
     exit
 fi
 
 command -v tmux >/dev/null 2>&1 || { echo "tmux not found"; exit 1; }
 
-if [[ "${1}" == '--action' ]]; then
+if [[ "${1:-}" == '--action' ]]; then
+    if [[ $# -ne 3 ]]; then
+        usage >&2
+        exit 2
+    fi
     run_action "${2}" "${3}"
     exit
 fi
 
 command -v fzf >/dev/null 2>&1 || { echo "fzf not found"; exit 1; }
 
-if [[ "${1}" == '--test' ]]; then
+if [[ "${1:-}" == '--test' ]]; then
     select_pane "${default_preview_pane}" "${default_fzf_window_position}" "${default_fzf_preview_window_position}" \
         "${default_session_icon}" "${default_window_icon}" "${default_pane_icon}" "${default_indent}" "${default_separator}" \
         "${default_highlight_color}" "${default_activity_color}"
     exit
 fi
 
-preview_pane="${1}"
-fzf_window_position="${2}"
-fzf_preview_window_position="${3}"
-session_icon="${4}"
-window_icon="${5}"
-pane_icon="${6}"
-indent="${7}"
-separator="${8}"
-highlight_color="${9}"
-activity_color="${10}"
+if [[ $# -eq 0 ]]; then
+    preview_pane="${default_preview_pane}"
+    fzf_window_position="${default_fzf_window_position}"
+    fzf_preview_window_position="${default_fzf_preview_window_position}"
+    session_icon="${default_session_icon}"
+    window_icon="${default_window_icon}"
+    pane_icon="${default_pane_icon}"
+    indent="${default_indent}"
+    separator="${default_separator}"
+    highlight_color="${default_highlight_color}"
+    activity_color="${default_activity_color}"
+elif [[ $# -eq 10 ]]; then
+    preview_pane="${1}"
+    fzf_window_position="${2}"
+    fzf_preview_window_position="${3}"
+    session_icon="${4}"
+    window_icon="${5}"
+    pane_icon="${6}"
+    indent="${7}"
+    separator="${8}"
+    highlight_color="${9}"
+    activity_color="${10}"
+else
+    usage >&2
+    exit 2
+fi
 
 select_pane "${preview_pane}" "${fzf_window_position}" "${fzf_preview_window_position}" \
     "${session_icon}" "${window_icon}" "${pane_icon}" "${indent}" "${separator}" \
