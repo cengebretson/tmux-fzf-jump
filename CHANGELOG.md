@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.4] - 2026-06-22
+
 ### Added
 
 - Adaptive preview width: `@fzf_pane_switch_preview-min-width` hides the pane
@@ -70,7 +72,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Baseline release of the fzf-based session/window/pane switcher.
 
-[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.3...HEAD
+[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.4...HEAD
+[2.1.4]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.3...v2.1.4
 [2.1.3]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.2...v2.1.3
 [2.1.2]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.0...v2.1.1
