@@ -61,14 +61,17 @@ if command -v tmux >/dev/null 2>&1; then
 
         binding="$(tmux -S "${socket_path}" list-keys -T prefix j)"
         grep -q 'select_pane.sh' <<< "${binding}"
+        grep -q "'100'" <<< "${binding}"
         grep -q 'center,70%,80%' <<< "${binding}"
 
         # An option explicitly set to empty must override the default, not fall
         # back to it. The separator arg sits immediately before the highlight
         # color, so an empty separator renders as "'' '166;227;161'".
         tmux -S "${socket_path}" set-option -g @fzf_pane_switch_separator ""
+        tmux -S "${socket_path}" set-option -g @fzf_pane_switch_preview-min-width "72"
         tmux -S "${socket_path}" run-shell "${ROOT_DIR}/select_pane.tmux"
         empty_binding="$(tmux -S "${socket_path}" list-keys -T prefix j)"
+        grep -q "'72'" <<< "${empty_binding}"
         grep -q "'' '166;227;161'" <<< "${empty_binding}"
 
         session_id="$(tmux -S "${socket_path}" display-message -p -t fzj-check '#{session_id}')"

@@ -7,6 +7,7 @@
 
 default_bind_key='j'
 default_preview_pane='true'
+default_preview_min_width='100'
 default_fzf_window_position='center,70%,80%'
 default_fzf_preview_window_position='right,,,nowrap'
 default_session_icon='󰐱'

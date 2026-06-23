@@ -30,12 +30,22 @@ function get_tmux_option() {
 
 function select_pane() {
     local fzf_version fzf_version_comparison has_border_styling=false
-    local current_pane pane target
+    local current_pane pane target preview_pane preview_min_width client_width preview_window
+    local preview_starts_hidden=false
 
     current_pane=$(tmux display-message -p '#{pane_id}')
+    preview_pane="${1}"
+    preview_min_width="${2}"
+
+    if [[ "${preview_pane}" = 'true' && "${preview_min_width}" =~ ^[0-9]+$ && "${preview_min_width}" -gt 0 ]]; then
+        client_width="$(tmux display-message -p '#{client_width}')"
+        if [[ "${client_width}" =~ ^[0-9]+$ && "${client_width}" -lt "${preview_min_width}" ]]; then
+            preview_starts_hidden=true
+        fi
+    fi
 
     local -a fzf_args
-    fzf_args=(--exit-0 --reverse --ansi --tmux "${2}" --with-nth=2..)
+    fzf_args=(--exit-0 --reverse --ansi --tmux "${3}" --with-nth=2..)
 
     fzf_version=$(fzf --version | awk '{print $1}')
 
@@ -62,15 +72,17 @@ function select_pane() {
     fi
     [[ "${has_border_styling}" = false ]] && fzf_args+=(--preview-label=preview)
 
-    if [[ "${1}" = 'true' ]]; then
+    if [[ "${preview_pane}" = 'true' ]]; then
+        preview_window="${4}"
+        [[ "${preview_starts_hidden}" = true ]] && preview_window+=",hidden"
         fzf_args+=(
             --preview "tmux capture-pane -ep -S -\$(( \${FZF_PREVIEW_LINES:-30} )) -t {1} | awk \"{a[NR]=\\\$0} END{for(i=NR;i>0;i--) if(a[i]~/[^ \\t]/){for(j=1;j<=i;j++) print a[j]; exit}}\" | tail -n \$(( \${FZF_PREVIEW_LINES:-30} ))"
-            --preview-window="${3}"
+            --preview-window="${preview_window}"
         )
     fi
 
-    local session_icon="${4}" window_icon="${5}" pane_icon="${6}" indent="${7}" separator="${8}"
-    local highlight_color="${9}" activity_color="${10}"
+    local session_icon="${5}" window_icon="${6}" pane_icon="${7}" indent="${8}" separator="${9}"
+    local highlight_color="${10}" activity_color="${11}"
     local attention_icon_input attention_icon_blocked attention_icon_review attention_icon_done
     attention_icon_input="$(get_tmux_option '@tmux_attention_icon_input' "${default_attention_icon_input}")"
     attention_icon_blocked="$(get_tmux_option '@tmux_attention_icon_blocked' "${default_attention_icon_blocked}")"
@@ -287,7 +299,7 @@ function usage() {
 Usage:
   ${0##*/} [--version|--fixture|--fixture-fzf|--test]
   ${0##*/} --action <kill|rename|new|detach> <target>
-  ${0##*/} <preview-pane> <fzf-window-position> <preview-window-position> <session-icon> <window-icon> <pane-icon> <indent> <separator> <highlight-color> <activity-color>
+  ${0##*/} <preview-pane> <preview-min-width> <fzf-window-position> <preview-window-position> <session-icon> <window-icon> <pane-icon> <indent> <separator> <highlight-color> <activity-color>
 
 Run with no arguments to use the default picker options.
 EOF
@@ -362,7 +374,7 @@ fi
 command -v fzf >/dev/null 2>&1 || { echo "fzf not found"; exit 1; }
 
 if [[ "${1:-}" == '--test' ]]; then
-    select_pane "${default_preview_pane}" "${default_fzf_window_position}" "${default_fzf_preview_window_position}" \
+    select_pane "${default_preview_pane}" "${default_preview_min_width}" "${default_fzf_window_position}" "${default_fzf_preview_window_position}" \
         "${default_session_icon}" "${default_window_icon}" "${default_pane_icon}" "${default_indent}" "${default_separator}" \
         "${default_highlight_color}" "${default_activity_color}"
     exit
@@ -370,6 +382,7 @@ fi
 
 if [[ $# -eq 0 ]]; then
     preview_pane="${default_preview_pane}"
+    preview_min_width="${default_preview_min_width}"
     fzf_window_position="${default_fzf_window_position}"
     fzf_preview_window_position="${default_fzf_preview_window_position}"
     session_icon="${default_session_icon}"
@@ -379,22 +392,23 @@ if [[ $# -eq 0 ]]; then
     separator="${default_separator}"
     highlight_color="${default_highlight_color}"
     activity_color="${default_activity_color}"
-elif [[ $# -eq 10 ]]; then
+elif [[ $# -eq 11 ]]; then
     preview_pane="${1}"
-    fzf_window_position="${2}"
-    fzf_preview_window_position="${3}"
-    session_icon="${4}"
-    window_icon="${5}"
-    pane_icon="${6}"
-    indent="${7}"
-    separator="${8}"
-    highlight_color="${9}"
-    activity_color="${10}"
+    preview_min_width="${2}"
+    fzf_window_position="${3}"
+    fzf_preview_window_position="${4}"
+    session_icon="${5}"
+    window_icon="${6}"
+    pane_icon="${7}"
+    indent="${8}"
+    separator="${9}"
+    highlight_color="${10}"
+    activity_color="${11}"
 else
     usage >&2
     exit 2
 fi
 
-select_pane "${preview_pane}" "${fzf_window_position}" "${fzf_preview_window_position}" \
+select_pane "${preview_pane}" "${preview_min_width}" "${fzf_window_position}" "${fzf_preview_window_position}" \
     "${session_icon}" "${window_icon}" "${pane_icon}" "${indent}" "${separator}" \
     "${highlight_color}" "${activity_color}"

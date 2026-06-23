@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Adaptive preview width: `@fzf_pane_switch_preview-min-width` hides the pane
+  preview by default on narrow tmux clients while keeping `ctrl-p` preview
+  toggling available.
+
 ## [2.1.3] - 2026-06-17
 
 ### Fixed

@@ -9,6 +9,7 @@ source "${CURRENT_DIR}/defaults.sh"
 # User overridable options
 tmux_bind_key="@fzf_pane_switch_bind-key"
 tmux_preview_pane="@fzf_pane_switch_preview-pane"
+tmux_preview_min_width="@fzf_pane_switch_preview-min-width"
 tmux_fzf_window_position="@fzf_pane_switch_window-position"
 tmux_fzf_preview_window_position="@fzf_pane_switch_preview-pane-position"
 tmux_session_icon="@fzf_pane_switch_session-icon"
@@ -42,10 +43,11 @@ shell_quote() {
 }
 
 set_switch_pane_bindings() {
-    local bind_key preview_pane fzf_window_position fzf_preview_window_position command
+    local bind_key preview_pane preview_min_width fzf_window_position fzf_preview_window_position command
     local session_icon window_icon pane_icon indent separator highlight_color activity_color
     bind_key="$(get_tmux_option "${tmux_bind_key}" "${default_bind_key}")"
     preview_pane="$(get_tmux_option "${tmux_preview_pane}" "${default_preview_pane}")"
+    preview_min_width="$(get_tmux_option "${tmux_preview_min_width}" "${default_preview_min_width}")"
     fzf_window_position="$(get_tmux_option "${tmux_fzf_window_position}" "${default_fzf_window_position}")"
     fzf_preview_window_position="$(get_tmux_option "${tmux_fzf_preview_window_position}" "${default_fzf_preview_window_position}")"
     session_icon="$(get_tmux_option "${tmux_session_icon}" "${default_session_icon}")"
@@ -58,6 +60,7 @@ set_switch_pane_bindings() {
 
     command="$(shell_quote "${CURRENT_DIR}/select_pane.sh")"
     command+=" $(shell_quote "${preview_pane}")"
+    command+=" $(shell_quote "${preview_min_width}")"
     command+=" $(shell_quote "${fzf_window_position}")"
     command+=" $(shell_quote "${fzf_preview_window_position}")"
     command+=" $(shell_quote "${session_icon}")"
