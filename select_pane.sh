@@ -100,9 +100,16 @@ function select_pane() {
         cs=$(tmux display-message -p '#{session_name}')
         cw=$(tmux display-message -p '#{window_index}')
         cp=$(tmux display-message -p '#{pane_id}')
+        # Optional: hide sessions whose name matches @fzf_pane_switch_exclude-sessions
+        # (a glob such as "phone-*"). Empty by default, so nothing is hidden. Lets a
+        # caller exclude derived/mirror sessions without this plugin knowing about them.
+        local excl_pat; excl_pat="$(get_tmux_option '@fzf_pane_switch_exclude-sessions' '')"
+        local -a excl=()
+        [ -n "${excl_pat}" ] && excl=(-f "#{?#{m:${excl_pat},#{session_name}},0,1}")
         {
-            # Sessions sorted by most recently attached (newest first via inverted timestamp)
-            tmux list-sessions -F $'#{session_last_attached}\t#{session_name}\t#{session_id}\t#{session_windows}' | \
+            # Sessions sorted by most recently attached (newest first via inverted timestamp).
+            # "${excl[@]}" applies the @fzf_pane_switch_exclude-sessions filter when set.
+            tmux list-sessions "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{session_id}\t#{session_windows}' | \
                 awk -F'\t' -v icon="${_FZJ_SI}" -v cur="${cs}" -v hc="${_FZJ_HC}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
@@ -112,7 +119,7 @@ function select_pane() {
             # window of a single-window session — so its activity and
             # tmux-attention marker are never hidden. (Panes below still collapse
             # when a window has only one.)
-            tmux list-windows -aF $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}' | \
+            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}' | \
                 awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur_s && $3==cur_w) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
@@ -121,7 +128,7 @@ function select_pane() {
                     att = (att=="") ? "" : " \033[38;2;" ac "m" att "\033[0m"
                     printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s  %s%s%s%s\n", ts, $10, $3, $4, b, icon, $2, sep, $5, ($6==1?"":$6" panes"), r, act, att
                 }'
-            tmux list-panes -aF $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{pane_title}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}\t#{session_id}' | \
+            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{pane_title}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}\t#{session_id}' | \
                 awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_IN}${_FZJ_PI}" -v sep="${_FZJ_SEP}" -v cur="${cp}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v home="${HOME}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '$8 > 1 {
                     ts = 9999999999 - $1
                     b = ($5==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""

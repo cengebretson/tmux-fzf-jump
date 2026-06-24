@@ -83,6 +83,7 @@ All options are set in `~/.tmux.conf`. Quick reference:
 | `@fzf_pane_switch_separator` | `/` | Separator between session/window/pane names |
 | `@fzf_pane_switch_highlight-color` | `166;227;161` | RGB color for the current item highlight |
 | `@fzf_pane_switch_activity-color` | `249;226;175` | RGB color for the activity indicator `●` |
+| `@fzf_pane_switch_exclude-sessions` | (empty) | Hide sessions whose name matches this glob (e.g. `phone-*`); empty shows all. Useful for grouped/mirror sessions that would otherwise duplicate every window and pane. |
 
 ### Key binding
 

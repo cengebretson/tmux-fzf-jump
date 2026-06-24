@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `@fzf_pane_switch_exclude-sessions`: hide sessions whose name matches a glob
+  (e.g. `phone-*`) from the picker. Empty by default, so nothing is hidden.
+  Useful for grouped or mirror sessions that share windows with a parent and
+  would otherwise duplicate every window and pane in the list.
+
 ## [2.1.4] - 2026-06-22
 
 ### Added
