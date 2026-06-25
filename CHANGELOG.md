@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Surface tmux-attention's `@agent_attention_reason` dimmed next to the state
+  icon on window and pane rows, so the picker shows *why* a window wants
+  attention, not just that it does.
+
+### Changed
+
+- Build the picker's current-target context with a single `tmux display-message`
+  call instead of three.
+- Harden the fzf version comparison against non-numeric version suffixes (e.g. a
+  packager's `0.65.1-1`).
+
 ## [2.2.0] - 2026-06-24
 
 ### Added

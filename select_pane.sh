@@ -97,9 +97,8 @@ function select_pane() {
 
     _fzj_list() {
         local cs cw cp
-        cs=$(tmux display-message -p '#{session_name}')
-        cw=$(tmux display-message -p '#{window_index}')
-        cp=$(tmux display-message -p '#{pane_id}')
+        # One display-message for all three current-target fields rather than three.
+        IFS=$'\t' read -r cs cw cp <<< "$(tmux display-message -p $'#{session_name}\t#{window_index}\t#{pane_id}')"
         # Optional: hide sessions whose name matches @fzf_pane_switch_exclude-sessions
         # (a glob such as "phone-*"). Empty by default, so nothing is hidden. Lets a
         # caller exclude derived/mirror sessions without this plugin knowing about them.
@@ -119,29 +118,33 @@ function select_pane() {
             # window of a single-window session — so its activity and
             # tmux-attention marker are never hidden. (Panes below still collapse
             # when a window has only one.)
-            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}' | \
+            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}' | \
                 awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur_s && $3==cur_w) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
                     act = ($8=="1") ? " \033[38;2;" ac "m●\033[0m" : ""
+                    known = ($9=="input" || $9=="blocked" || $9=="review" || $9=="done")
                     att = ($9=="input") ? ai : (($9=="blocked") ? ab : (($9=="review") ? ar : (($9=="done") ? ad : "")))
                     att = (att=="") ? "" : " \033[38;2;" ac "m" att "\033[0m"
-                    printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s  %s%s%s%s\n", ts, $10, $3, $4, b, icon, $2, sep, $5, ($6==1?"":$6" panes"), r, act, att
+                    rsn = (known && $11!="") ? " \033[2m(" $11 ")\033[0m" : ""
+                    printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s  %s%s%s%s%s\n", ts, $10, $3, $4, b, icon, $2, sep, $5, ($6==1?"":$6" panes"), r, act, att, rsn
                 }'
-            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{pane_title}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}\t#{session_id}' | \
+            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{pane_title}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}' | \
                 awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_IN}${_FZJ_PI}" -v sep="${_FZJ_SEP}" -v cur="${cp}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v home="${HOME}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '$8 > 1 {
                     ts = 9999999999 - $1
                     b = ($5==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
                     act = ($10=="1") ? " \033[38;2;" ac "m●\033[0m" : ""
+                    known = ($12=="input" || $12=="blocked" || $12=="review" || $12=="done")
                     att = ($12=="input") ? ai : (($12=="blocked") ? ab : (($12=="review") ? ar : (($12=="done") ? ad : "")))
                     att = (att=="") ? "" : " \033[38;2;" ac "m" att "\033[0m"
+                    rsn = (known && $14!="") ? " \033[2m(" $14 ")\033[0m" : ""
                     cmd = ($9 ~ /^(bash|sh|zsh|fish|dash)$/) ? "" : " \033[2m(" $9 ")\033[0m"
                     p = $11
                     if (home != "" && index(p, home) == 1) sub(home, "~", p)
                     n = split(p, parts, "/")
                     if (n <= 2) short_path = p
                     else { prefix = (parts[1] == "~") ? "~/" : ""; short_path = prefix parts[n-1] "/" parts[n] }
-                    printf "%010d:%s:%05d:%05d:2 %s %s%s %s %s %s %s %s%s%s%s%s\n", ts, $13, $3, $4, $5, b, icon, $2, sep, $6, sep, short_path, cmd, r, act, att
+                    printf "%010d:%s:%05d:%05d:2 %s %s%s %s %s %s %s %s%s%s%s%s%s\n", ts, $13, $3, $4, $5, b, icon, $2, sep, $6, sep, short_path, cmd, r, act, att, rsn
                 }'
         } | sort | cut -d' ' -f2-
     }
@@ -322,6 +325,10 @@ function vercomp() {
   for i in 0 1 2; do
     local num1="${ver1[i]:-0}"
     local num2="${ver2[i]:-0}"
+    # Strip any non-numeric suffix (e.g. a packager's "0.65.1-1") so the
+    # arithmetic comparison below never chokes on a build-metadata tag.
+    num1="${num1%%[!0-9]*}"; num1="${num1:-0}"
+    num2="${num2%%[!0-9]*}"; num2="${num2:-0}"
 
     if (( num1 > num2 )); then
       return 1
@@ -344,9 +351,9 @@ function print_fixture() {
 
     printf "\$1 %s%s workspace  3 windows%s\n" "${highlight}" "${session_icon}" "${reset}"
     printf "@1 %s%s workspace%s dashboard 2 panes  %s●%s %s%s%s\n" "${highlight}" "${indent}${window_icon}" "${separator}" "${activity}" "${reset}" "${activity}" "${default_attention_icon_input}" "${reset}"
-    printf "%%1 %s%s workspace%s dashboard%s tmux-fzf-jump %s(node)%s %s%s%s\n" "${highlight}" "${indent}${indent}${pane_icon}" "${separator}" "${separator}" "${dim}" "${reset}" "${activity}" "${default_attention_icon_input}" "${reset}"
+    printf "%%1 %s%s workspace%s dashboard%s tmux-fzf-jump %s(node)%s %s%s%s %s(task_running)%s\n" "${highlight}" "${indent}${indent}${pane_icon}" "${separator}" "${separator}" "${dim}" "${reset}" "${activity}" "${default_attention_icon_input}" "${reset}" "${dim}" "${reset}"
     printf "%%2 %s workspace%s dashboard%s tmux-attention %s%s%s\n" "${indent}${indent}${pane_icon}" "${separator}" "${separator}" "${activity}" "${default_attention_icon_input}" "${reset}"
-    printf "@2 %s project%s api 1 pane  %s%s%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_blocked}" "${reset}"
+    printf "@2 %s project%s api 1 pane  %s%s%s %s(approval_required)%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_blocked}" "${reset}" "${dim}" "${reset}"
     printf "@3 %s project%s review 1 pane  %s%s%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_review}" "${reset}"
     printf "\$2 %s archive  1 window\n" "${session_icon}"
     printf "@4 %s archive%s done 1 pane  %s%s%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_done}" "${reset}"

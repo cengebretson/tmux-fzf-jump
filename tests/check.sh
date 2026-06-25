@@ -39,6 +39,10 @@ grep -q 'archive' <<< "${fixture_output}"
 # window's activity/attention marker is never hidden by single-window collapse.
 grep -q '^\$2 ' <<< "${fixture_output}"
 grep -q '^@4 ' <<< "${fixture_output}"
+# When tmux-attention records a reason, the picker surfaces it dimmed alongside
+# the attention marker on the relevant window/pane row.
+grep -q 'approval_required' <<< "${fixture_output}"
+grep -q 'task_running' <<< "${fixture_output}"
 
 if command -v tmux >/dev/null 2>&1; then
     real_tmux="$(command -v tmux)"

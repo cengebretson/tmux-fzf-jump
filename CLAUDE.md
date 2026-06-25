@@ -30,7 +30,7 @@ A tmux plugin (TPM-compatible) that lets users switch to any session, window, or
 
 `select_pane.sh` combines output from `tmux list-sessions`, `tmux list-windows -a`, and `tmux list-panes -a` into a single fzf list. Each line's first field (hidden via `--with-nth=2..`) is the tmux target passed to `tmux switch-client -t`: a session ID (`$0`), window ID (`@1`), or pane ID (`%4`).
 
-If the optional `tmux-attention` plugin is installed, `select_pane.sh` also reads each window's `@agent_attention` option from tmux formats and shows the matching status icon on window and pane rows. Supported states are `input`, `blocked`, `review`, and `done`. Icons come from `@tmux_attention_icon_input`, `@tmux_attention_icon_blocked`, `@tmux_attention_icon_review`, and `@tmux_attention_icon_done`, with local fallbacks matching tmux-attention defaults.
+If the optional `tmux-attention` plugin is installed, `select_pane.sh` also reads each window's `@agent_attention` option from tmux formats and shows the matching status icon on window and pane rows. Supported states are `input`, `blocked`, `review`, and `done`. Icons come from `@tmux_attention_icon_input`, `@tmux_attention_icon_blocked`, `@tmux_attention_icon_review`, and `@tmux_attention_icon_done`, with local fallbacks matching tmux-attention defaults. When the window also carries `@agent_attention_reason`, the reason is appended dimmed after the icon.
 
 ## Testing
 

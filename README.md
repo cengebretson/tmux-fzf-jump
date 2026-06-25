@@ -187,6 +187,8 @@ set -g @tmux_attention_icon_review  "󰛨"
 set -g @tmux_attention_icon_done    ""
 ```
 
+When a marker also records a reason (tmux-attention's `@agent_attention_reason`, e.g. `approval_required`), it is shown dimmed next to the icon on that window/pane row.
+
 You can preview representative rows from the repository without creating tmux sessions:
 
 ```bash
