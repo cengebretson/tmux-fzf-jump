@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Without this, a failed assertion under `set -e` exits 1 with no output at all.
+trap 'printf "check failed at line %s\n" "$LINENO" >&2' ERR
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
@@ -30,6 +33,7 @@ if ./select_pane.sh true center >/dev/null 2>&1; then
 fi
 
 fixture_output="$(./select_pane.sh --fixture)"
+# shellcheck disable=SC2016  # matching a literal $1 session id, not expanding
 grep -q '^\$1 ' <<< "${fixture_output}"
 grep -q '^@1 ' <<< "${fixture_output}"
 grep -q '^%1 ' <<< "${fixture_output}"
@@ -37,6 +41,7 @@ grep -q 'workspace' <<< "${fixture_output}"
 grep -q 'archive' <<< "${fixture_output}"
 # A single-window session ($2 'archive') still lists its window row (@4), so a
 # window's activity/attention marker is never hidden by single-window collapse.
+# shellcheck disable=SC2016  # matching a literal $2 session id, not expanding
 grep -q '^\$2 ' <<< "${fixture_output}"
 grep -q '^@4 ' <<< "${fixture_output}"
 # When tmux-attention records a reason, the picker surfaces it dimmed alongside
@@ -63,7 +68,9 @@ if command -v tmux >/dev/null 2>&1; then
     if tmux -S "${socket_path}" has-session -t fzj-check >/dev/null 2>&1; then
         tmux -S "${socket_path}" run-shell "${ROOT_DIR}/select_pane.tmux"
 
-        binding="$(tmux -S "${socket_path}" list-keys -T prefix j)"
+        # tmux >= 3.7 prints nothing for `list-keys -T prefix j` (trailing key
+        # filter), so grep the full table for the j binding instead.
+        binding="$(tmux -S "${socket_path}" list-keys -T prefix | awk '$4 == "j"')"
         grep -q 'select_pane.sh' <<< "${binding}"
         grep -q "'100'" <<< "${binding}"
         grep -q 'center,70%,80%' <<< "${binding}"
@@ -74,7 +81,7 @@ if command -v tmux >/dev/null 2>&1; then
         tmux -S "${socket_path}" set-option -g @fzf_pane_switch_separator ""
         tmux -S "${socket_path}" set-option -g @fzf_pane_switch_preview-min-width "72"
         tmux -S "${socket_path}" run-shell "${ROOT_DIR}/select_pane.tmux"
-        empty_binding="$(tmux -S "${socket_path}" list-keys -T prefix j)"
+        empty_binding="$(tmux -S "${socket_path}" list-keys -T prefix | awk '$4 == "j"')"
         grep -q "'72'" <<< "${empty_binding}"
         grep -q "'' '166;227;161'" <<< "${empty_binding}"
 

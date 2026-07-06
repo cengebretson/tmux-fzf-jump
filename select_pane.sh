@@ -10,7 +10,9 @@ function shell_quote() {
     local value="${1}"
     printf "'"
     while [[ "${value}" == *"'"* ]]; do
-        printf "%s'\\''" "${value%%\'*}"
+        # Double the backslash: bash printf collapses \' in a format string, so
+        # a single one would emit ''' instead of the POSIX '\'' quote dance.
+        printf "%s'\\\\''" "${value%%\'*}"
         value="${value#*\'}"
     done
     printf "%s'" "${value}"
@@ -148,7 +150,10 @@ function select_pane() {
                 }'
         } | sort | cut -d' ' -f2-
     }
-    export -f _fzj_list
+    # Export get_tmux_option too: the reload() bindings run _fzj_list in a fresh
+    # bash, which otherwise lacks it and silently drops the session-exclusion
+    # filter after any kill/rename/new/detach action.
+    export -f _fzj_list get_tmux_option
 
     local full_hdr='  ctrl-x : kill\n  ctrl-r : rename\n  ctrl-n : new\n  ctrl-d : detach\n  ctrl-p : toggle preview\n  ?      : close'
     local short_hdr=''

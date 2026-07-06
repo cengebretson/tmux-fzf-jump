@@ -1,0 +1,18 @@
+# Pre-commit hooks for tmux-fzf-jump. Enable once with `pre-commit install`.
+# Requires the pre-commit framework (https://pre-commit.com) and shellcheck +
+# tmux + fzf on PATH (the hooks run them via the system environment).
+repos:
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        files: '^(select_pane\.sh|select_pane\.tmux|defaults\.sh|tests/check\.sh)$'
+
+      - id: tmux-fzf-jump-tests
+        name: tmux-fzf-jump integration tests
+        entry: tests/check.sh
+        language: script
+        pass_filenames: false
+        always_run: true

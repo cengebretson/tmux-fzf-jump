@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Export `get_tmux_option` alongside `_fzj_list` so fzf's reload bindings
+  (kill/rename/new/detach) keep honoring `@fzf_pane_switch_exclude-sessions`
+  instead of silently dropping the filter after the first in-picker action.
+- `shell_quote` in `select_pane.sh` now quotes values containing single quotes
+  correctly (bash `printf` collapsed the `\'` escape in the format string,
+  producing broken quoting).
+- `tests/check.sh` passes on tmux >= 3.7, where `list-keys -T prefix j` (with
+  the trailing key filter) prints nothing; assertion failures now report the
+  failing line instead of exiting silently.
+
+### Added
+
+- Pre-commit config (`.pre-commit-config.yaml`) running ShellCheck and the
+  integration tests; enable with `pre-commit install`.
+
 ## [2.3.0] - 2026-06-24
 
 ### Added

@@ -63,6 +63,12 @@ bash select_pane.sh true 100 center,70%,80% right,,,nowrap 'S' 'W' 'P' '  ' '/' 
 
 All user-facing options use the prefix `@fzf_pane_switch_` and are read with `get_tmux_option` in `select_pane.tmux`. The defaults are the `default_*` variables in `defaults.sh`.
 
+## Pre-commit
+
+`.pre-commit-config.yaml` runs ShellCheck over the scripts and then the
+integration suite. Enable it once with `pre-commit install` (requires
+[pre-commit](https://pre-commit.com) and `shellcheck` on PATH).
+
 ## Versioning and releases
 
 SemVer, tracked in `CHANGELOG.md`; the current version lives in `VERSION` and is printable via `select_pane.sh --version`.
