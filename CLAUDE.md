@@ -32,6 +32,14 @@ A tmux plugin (TPM-compatible) that lets users switch to any session, window, or
 
 If the optional `tmux-attention` plugin is installed, `select_pane.sh` also reads each window's `@agent_attention` option from tmux formats and shows the matching status icon on window and pane rows. Supported states are `input`, `blocked`, `review`, and `done`. Icons come from `@tmux_attention_icon_input`, `@tmux_attention_icon_blocked`, `@tmux_attention_icon_review`, and `@tmux_attention_icon_done`, with local fallbacks matching tmux-attention defaults. When the window also carries `@agent_attention_reason`, the reason is appended dimmed after the icon.
 
+Sessions whose name matches the `@fzf_pane_switch_exclude-sessions` glob (empty by default) are hidden from the list.
+
+## In-picker actions and reload
+
+The picker binds `ctrl-x`/`ctrl-r`/`ctrl-n`/`ctrl-d` (kill/rename/new/detach) to `select_pane.sh --action <verb> <target>`, then refreshes the list with `reload(bash -c _fzj_list)`. That reload runs `_fzj_list` in a **fresh bash**: the function itself and every function it calls must be `export -f`'d (currently `_fzj_list` and `get_tmux_option` — forgetting one silently degrades the reloaded list), and everything else it needs arrives via exported `_FZJ_*` environment variables. Keep both in mind when extending `_fzj_list`.
+
+`select_pane.sh` also has dev/test entry points: `--fixture` prints a static, fully-styled list for assertions, `--fixture-fzf` pipes it through fzf for a visual check, and `--test` runs the real picker with all defaults.
+
 ## Testing
 
 Run the smoke test before changing behavior:
@@ -41,6 +49,8 @@ tests/check.sh
 ```
 
 The check script runs ShellCheck, Bash syntax validation, the `--version` check, fixture assertions, and an isolated tmux server check that verifies `prefix + j` is bound through `run-shell` (including that an option set to `""` overrides its default). The same checks run in CI (`.github/workflows/ci.yml`) on every push and pull request.
+
+Assertion gotcha: tmux >= 3.7 prints nothing for `list-keys -T prefix j` (the trailing key-filter form), so the check greps the full `list-keys -T prefix` table instead — write new binding assertions the same way. An ERR trap reports the failing line; without it `set -e` + `grep -q` fails with no output at all.
 
 For manual testing inside a live tmux session:
 
