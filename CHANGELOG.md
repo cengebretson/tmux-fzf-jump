@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-07-06
+
 ### Fixed
 
 - Export `get_tmux_option` alongside `_fzj_list` so fzf's reload bindings
@@ -113,7 +115,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Baseline release of the fzf-based session/window/pane switcher.
 
-[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.4...v2.2.0
 [2.1.4]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.1.3...v2.1.4
