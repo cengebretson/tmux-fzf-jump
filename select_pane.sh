@@ -2,33 +2,10 @@
 
 _FZJ_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Default values (shared with select_pane.tmux)
+# Default values and shared helpers (shell_quote, get_tmux_option),
+# shared with select_pane.tmux.
 # shellcheck source=defaults.sh
 source "${_FZJ_DIR}/defaults.sh"
-
-function shell_quote() {
-    local value="${1}"
-    printf "'"
-    while [[ "${value}" == *"'"* ]]; do
-        # Double the backslash: bash printf collapses \' in a format string, so
-        # a single one would emit ''' instead of the POSIX '\'' quote dance.
-        printf "%s'\\\\''" "${value%%\'*}"
-        value="${value#*\'}"
-    done
-    printf "%s'" "${value}"
-}
-
-function get_tmux_option() {
-    local option="${1}"
-    local default_value="${2}"
-    # `show-option -gq <name>` prints a line only when the option is set, which
-    # lets us tell "set to empty" apart from "unset" (both yield empty -gqv).
-    if [[ -n "$(tmux show-option -gq "${option}")" ]]; then
-        tmux show-option -gqv "${option}"
-    else
-        printf "%s\n" "${default_value}"
-    fi
-}
 
 function select_pane() {
     local fzf_version fzf_version_comparison has_border_styling=false
@@ -131,22 +108,24 @@ function select_pane() {
                     rsn = (known && $11!="") ? " \033[2m(" $11 ")\033[0m" : ""
                     printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s  %s%s%s%s%s\n", ts, $10, $3, $4, b, icon, $2, sep, $5, ($6==1?"":$6" panes"), r, act, att, rsn
                 }'
-            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{pane_title}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}' | \
-                awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_IN}${_FZJ_PI}" -v sep="${_FZJ_SEP}" -v cur="${cp}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v home="${HOME}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '$8 > 1 {
+            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}' | \
+                awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_IN}${_FZJ_PI}" -v sep="${_FZJ_SEP}" -v cur="${cp}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v home="${HOME}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '$7 > 1 {
                     ts = 9999999999 - $1
                     b = ($5==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
-                    act = ($10=="1") ? " \033[38;2;" ac "m●\033[0m" : ""
-                    known = ($12=="input" || $12=="blocked" || $12=="review" || $12=="done")
-                    att = ($12=="input") ? ai : (($12=="blocked") ? ab : (($12=="review") ? ar : (($12=="done") ? ad : "")))
+                    act = ($9=="1") ? " \033[38;2;" ac "m●\033[0m" : ""
+                    known = ($11=="input" || $11=="blocked" || $11=="review" || $11=="done")
+                    att = ($11=="input") ? ai : (($11=="blocked") ? ab : (($11=="review") ? ar : (($11=="done") ? ad : "")))
                     att = (att=="") ? "" : " \033[38;2;" ac "m" att "\033[0m"
-                    rsn = (known && $14!="") ? " \033[2m(" $14 ")\033[0m" : ""
-                    cmd = ($9 ~ /^(bash|sh|zsh|fish|dash)$/) ? "" : " \033[2m(" $9 ")\033[0m"
-                    p = $11
-                    if (home != "" && index(p, home) == 1) sub(home, "~", p)
+                    rsn = (known && $13!="") ? " \033[2m(" $13 ")\033[0m" : ""
+                    cmd = ($8 ~ /^(bash|sh|zsh|fish|dash)$/) ? "" : " \033[2m(" $8 ")\033[0m"
+                    p = $10
+                    # Literal prefix replacement — sub() would treat home as an
+                    # ERE and mangle paths when it contains regex metacharacters.
+                    if (home != "" && index(p, home) == 1) p = "~" substr(p, length(home) + 1)
                     n = split(p, parts, "/")
                     if (n <= 2) short_path = p
                     else { prefix = (parts[1] == "~") ? "~/" : ""; short_path = prefix parts[n-1] "/" parts[n] }
-                    printf "%010d:%s:%05d:%05d:2 %s %s%s %s %s %s %s %s%s%s%s%s%s\n", ts, $13, $3, $4, $5, b, icon, $2, sep, $6, sep, short_path, cmd, r, act, att, rsn
+                    printf "%010d:%s:%05d:%05d:2 %s %s%s %s %s %s %s %s%s%s%s%s%s\n", ts, $12, $3, $4, $5, b, icon, $2, sep, $6, sep, short_path, cmd, r, act, att, rsn
                 }'
         } | sort | cut -d' ' -f2-
     }

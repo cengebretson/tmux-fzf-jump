@@ -4,7 +4,7 @@
 
 ![Demonstration of tmux-fzf-pane-switch in action](assets/demo.gif)
 
-Switch to any tmux session, window, or pane using fzf. The list is grouped hierarchically — sessions at the top (sorted by most recently used), windows beneath their session, and panes beneath their window (only shown when a window has more than one pane). Windows and panes with unread activity are marked with a `●` indicator, optional [tmux-attention](https://github.com/cengebretson/tmux-attention) states are shown with their configured icons, and panes show the current working directory and running command alongside their name.
+Switch to any tmux session, window, or pane using fzf. The list is grouped hierarchically — sessions at the top (sorted by most recently used), windows beneath their session, and panes beneath their window (only shown when a window has more than one pane). Windows and panes with unread activity are marked with a `●` indicator, optional [tmux-attention](https://github.com/cengebretson/tmux-attention) states are shown with their configured icons, and pane rows show the window name alongside the pane's current working directory and running command.
 
 ## Requirements
 
@@ -64,6 +64,8 @@ Press `<prefix> + j` (the default key binding) to open the switcher. Type to fuz
 | `ctrl-x` | Kill selected session / window / pane after confirmation |
 | `ctrl-p` | Toggle preview pane |
 | `?` | Toggle key binding help |
+
+Renaming a pane sets its tmux pane title (visible in pane borders when enabled); pane titles are not shown in the picker list itself.
 
 ## Configuration
 

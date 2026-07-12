@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Home-directory shortening in pane rows now uses a literal prefix replacement
+  instead of an awk regex `sub()`, so a `$HOME` containing regex metacharacters
+  (e.g. a dot) can no longer mangle the displayed path.
+
+### Changed
+
+- Dropped the unused `#{pane_title}` field from the pane listing (it was
+  fetched but never rendered), and clarified in the README that pane rows show
+  the window name, working directory, and running command — renaming a pane
+  still sets its tmux pane title, which appears in pane borders, not in the
+  picker list.
+- Deduplicated `shell_quote` and `get_tmux_option` into the shared
+  `defaults.sh` (the two copies had drifted; the safer `printf`-based
+  `get_tmux_option` is kept).
+
 ## [2.3.1] - 2026-07-06
 
 ### Fixed

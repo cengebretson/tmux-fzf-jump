@@ -2,7 +2,8 @@
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Default values (shared with select_pane.sh)
+# Default values and shared helpers (shell_quote, get_tmux_option),
+# shared with select_pane.sh.
 # shellcheck source=defaults.sh
 source "${CURRENT_DIR}/defaults.sh"
 
@@ -19,28 +20,6 @@ tmux_indent="@fzf_pane_switch_indent"
 tmux_separator="@fzf_pane_switch_separator"
 tmux_highlight_color="@fzf_pane_switch_highlight-color"
 tmux_activity_color="@fzf_pane_switch_activity-color"
-
-get_tmux_option() {
-    local option="${1}"
-    local default_value="${2}"
-    # `show-option -gq <name>` prints a line only when the option is set, which
-    # lets us tell "set to empty" apart from "unset" (both yield empty -gqv).
-    if [ -n "$(tmux show-option -gq "${option}")" ]; then
-        tmux show-option -gqv "${option}"
-    else
-        echo "${default_value}"
-    fi
-}
-
-shell_quote() {
-    local value="${1}"
-    printf "'"
-    while [[ "${value}" == *"'"* ]]; do
-        printf "%s'\\\\''" "${value%%\'*}"
-        value="${value#*\'}"
-    done
-    printf "%s'" "${value}"
-}
 
 set_switch_pane_bindings() {
     local bind_key preview_pane preview_min_width fzf_window_position fzf_preview_window_position command
