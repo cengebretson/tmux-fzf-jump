@@ -9,10 +9,9 @@ source "${_FZJ_DIR}/defaults.sh"
 
 function select_pane() {
     local fzf_version has_border_styling=false
-    local current_pane pane target preview_pane preview_min_width client_width preview_window
+    local pane target preview_pane preview_min_width client_width preview_window
     local preview_starts_hidden=false
 
-    current_pane=$(tmux display-message -p '#{pane_id}')
     preview_pane="${1}"
     preview_min_width="${2}"
 
@@ -168,7 +167,9 @@ function select_pane() {
             tmux select-pane -t "${target}"
             ;;
         *)
-            tmux switch-client -t "${current_pane}"
+            # Empty or unrecognized target (e.g. fzf was cancelled with Esc):
+            # the picker runs in a popup via `fzf --tmux`, so the client never
+            # left the current pane and there's nothing to switch back to.
             ;;
     esac
 }

@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selected target with a parameter expansion instead of `echo | awk`, and use
   `$FZF_PREVIEW_LINES` directly in the preview command without the arithmetic
   wrapper.
+- Removed the dead cancel-fallback branch in `select_pane.sh`'s target
+  dispatch (`tmux switch-client` back to the originating pane) along with the
+  `current_pane` lookup that only fed it. It was a relic of a pre-popup fzf
+  invocation; since the picker always runs via `fzf --tmux`, the client never
+  leaves the current pane, so cancelling (Esc) already left nothing to switch
+  back to.
 
 ## [2.4.0] - 2026-07-12
 
