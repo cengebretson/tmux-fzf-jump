@@ -8,7 +8,7 @@ _FZJ_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_FZJ_DIR}/defaults.sh"
 
 function select_pane() {
-    local fzf_version fzf_version_comparison has_border_styling=false
+    local fzf_version has_border_styling=false
     local current_pane pane target preview_pane preview_min_width client_width preview_window
     local preview_starts_hidden=false
 
@@ -28,15 +28,12 @@ function select_pane() {
 
     fzf_version=$(fzf --version | awk '{print $1}')
 
-    vercomp '0.53.0' "${fzf_version}"
-    if [[ $? -eq 1 ]]; then
+    if ! fzf_at_least '0.53.0'; then
         echo "tmux-fzf-jump requires fzf >= 0.53.0 (found ${fzf_version})" >&2
         return 1
     fi
 
-    vercomp '0.58.0' "${fzf_version}"
-    fzf_version_comparison=$?
-    if [[ ${fzf_version_comparison} -ne 1 ]]; then
+    if fzf_at_least '0.58.0'; then
         fzf_args+=(
             --input-border --input-label=' Search (? for help) ' --info=inline-right
             --list-border --list-label=' Tmux '
@@ -44,9 +41,7 @@ function select_pane() {
         )
         has_border_styling=true
     fi
-    vercomp '0.61.0' "${fzf_version}"
-    fzf_version_comparison=$?
-    if [[ ${fzf_version_comparison} -ne 1 ]]; then
+    if fzf_at_least '0.61.0'; then
         fzf_args+=(--ghost 'type to search...')
     fi
     [[ "${has_border_styling}" = false ]] && fzf_args+=(--preview-label=preview)
@@ -55,7 +50,7 @@ function select_pane() {
         preview_window="${4}"
         [[ "${preview_starts_hidden}" = true ]] && preview_window+=",hidden"
         fzf_args+=(
-            --preview "tmux capture-pane -ep -S -\$(( \${FZF_PREVIEW_LINES:-30} )) -t {1} | awk \"{a[NR]=\\\$0} END{for(i=NR;i>0;i--) if(a[i]~/[^ \\t]/){for(j=1;j<=i;j++) print a[j]; exit}}\" | tail -n \$(( \${FZF_PREVIEW_LINES:-30} ))"
+            --preview "tmux capture-pane -ep -S -\${FZF_PREVIEW_LINES:-30} -t {1} | awk \"{a[NR]=\\\$0} END{for(i=NR;i>0;i--) if(a[i]~/[^ \\t]/){for(j=1;j<=i;j++) print a[j]; exit}}\" | tail -n \${FZF_PREVIEW_LINES:-30}"
             --preview-window="${preview_window}"
         )
     fi
@@ -156,12 +151,10 @@ function select_pane() {
 
     pane=$(
         _fzj_list |
-        SHELL=/bin/sh fzf "${fzf_args[@]}" |
-        tail -1
+        SHELL=/bin/sh fzf "${fzf_args[@]}"
     )
-    rm -f "${_help_state}"
 
-    target=$(echo "${pane}" | awk '{print $1}')
+    target="${pane%% *}"
 
     case "${target}" in
         \$*|@*)
@@ -324,6 +317,14 @@ function vercomp() {
   return 0
 }
 
+# True when the detected fzf version (${fzf_version}, a local of the calling
+# select_pane, visible here via bash dynamic scoping) is >= the given minimum.
+# vercomp returns 1 only when its first argument is the newer version.
+function fzf_at_least() {
+    vercomp "$1" "${fzf_version}"
+    [[ $? -ne 1 ]]
+}
+
 function print_fixture() {
     local session_icon="${default_session_icon}" window_icon="${default_window_icon}" pane_icon="${default_pane_icon}"
     local indent="${default_indent}" separator="${default_separator}"
@@ -371,42 +372,16 @@ fi
 
 command -v fzf >/dev/null 2>&1 || { echo "fzf not found"; exit 1; }
 
-if [[ "${1:-}" == '--test' ]]; then
+# --test is an alias of the no-argument invocation: both run the picker with
+# all defaults. Eleven arguments come from select_pane.tmux and pass through
+# positionally unchanged.
+if [[ $# -eq 0 || "${1:-}" == '--test' ]]; then
     select_pane "${default_preview_pane}" "${default_preview_min_width}" "${default_fzf_window_position}" "${default_fzf_preview_window_position}" \
         "${default_session_icon}" "${default_window_icon}" "${default_pane_icon}" "${default_indent}" "${default_separator}" \
         "${default_highlight_color}" "${default_activity_color}"
-    exit
-fi
-
-if [[ $# -eq 0 ]]; then
-    preview_pane="${default_preview_pane}"
-    preview_min_width="${default_preview_min_width}"
-    fzf_window_position="${default_fzf_window_position}"
-    fzf_preview_window_position="${default_fzf_preview_window_position}"
-    session_icon="${default_session_icon}"
-    window_icon="${default_window_icon}"
-    pane_icon="${default_pane_icon}"
-    indent="${default_indent}"
-    separator="${default_separator}"
-    highlight_color="${default_highlight_color}"
-    activity_color="${default_activity_color}"
 elif [[ $# -eq 11 ]]; then
-    preview_pane="${1}"
-    preview_min_width="${2}"
-    fzf_window_position="${3}"
-    fzf_preview_window_position="${4}"
-    session_icon="${5}"
-    window_icon="${6}"
-    pane_icon="${7}"
-    indent="${8}"
-    separator="${9}"
-    highlight_color="${10}"
-    activity_color="${11}"
+    select_pane "$@"
 else
     usage >&2
     exit 2
 fi
-
-select_pane "${preview_pane}" "${preview_min_width}" "${fzf_window_position}" "${fzf_preview_window_position}" \
-    "${session_icon}" "${window_icon}" "${pane_icon}" "${indent}" "${separator}" \
-    "${highlight_color}" "${activity_color}"

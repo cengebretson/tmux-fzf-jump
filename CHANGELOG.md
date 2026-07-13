@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Collapsed `select_pane.sh`'s argument dispatch: `--test` and the no-argument
+  invocation share one defaults branch, and the eleven picker arguments now
+  pass through as `"$@"` instead of being copied into named variables.
+- Extracted an `fzf_at_least` helper for the fzf version gates, replacing the
+  repeated `vercomp` + `$?` comparisons.
+- Small cleanups in `select_pane.sh`: rely on the cleanup trap instead of a
+  redundant `rm -f` of the help-state file, drop a defensive `tail -1` after
+  fzf (it emits a single line without `--multi`/`--print-query`), extract the
+  selected target with a parameter expansion instead of `echo | awk`, and use
+  `$FZF_PREVIEW_LINES` directly in the preview command without the arithmetic
+  wrapper.
+
 ## [2.4.0] - 2026-07-12
 
 ### Fixed
