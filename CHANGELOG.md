@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-07-12
+
 ### Changed
 
 - Collapsed `select_pane.sh`'s argument dispatch: `--test` and the no-argument
@@ -154,7 +156,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Baseline release of the fzf-based session/window/pane switcher.
 
-[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.2.0...v2.3.0
