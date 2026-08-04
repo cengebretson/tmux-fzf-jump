@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-08-04
+
 ### Changed
 
 - Use a compact navigation-only layout below the configured preview width:
@@ -179,7 +181,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Baseline release of the fzf-based session/window/pane switcher.
 
-[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.3.1...v2.4.0
