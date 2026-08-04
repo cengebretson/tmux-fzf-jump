@@ -4,7 +4,7 @@
 
 ![Demonstration of tmux-fzf-pane-switch in action](assets/demo.gif)
 
-Switch to any tmux session, window, or pane using fzf. The list is grouped hierarchically — sessions at the top (sorted by most recently used), windows beneath their session, and panes beneath their window (only shown when a window has more than one pane). Windows and panes with unread activity are marked with a `●` indicator, optional [tmux-attention](https://github.com/cengebretson/tmux-attention) states are shown with their configured icons, and pane rows show the window name alongside the pane's current working directory and running command.
+Switch to any tmux session, window, or pane using fzf. The list is grouped hierarchically — sessions at the top (sorted by most recently used), windows beneath their session, and panes beneath their window (only shown when a window has more than one pane). Windows and panes with unread activity are marked with a `●` indicator. Optional [tmux-attention](https://github.com/cengebretson/tmux-attention) states replace the normal icon on window and pane rows. Pane rows retain the session name for fuzzy matching, followed by an explicit `@pane_name` when set or the pane's current process.
 
 ## Requirements
 
@@ -178,7 +178,13 @@ set -g @fzf_pane_switch_activity-color  "249;226;175"  # activity dot (default: 
 
 ### tmux-attention integration
 
-If [tmux-attention](https://github.com/cengebretson/tmux-attention) is installed and has set a window's `@agent_attention` option, matching status icons are shown on that window and its panes. The integration is optional; when `@agent_attention` is empty, nothing extra is rendered.
+If [tmux-attention](https://github.com/cengebretson/tmux-attention) is installed, a matching summary icon replaces the normal window icon and each pane's own status icon replaces its normal pane icon. Attention states take precedence; otherwise an active agent turn renders the working icon. Multiple agents in separate panes are displayed independently. The integration is optional, and the normal window or pane icon remains when neither state is active or the matching state icon is configured as empty.
+
+Pane labels use `<session> / <name>`, with the explicit pane option `@pane_name` falling back to `pane_current_command`. The in-picker rename action sets both `@pane_name` and tmux's native pane title so intentional names remain stable even when terminal applications update `pane_title`:
+
+```bash
+tmux set-option -p -t %12 @pane_name "api"
+```
 
 The supported states are `input`, `blocked`, `review`, and `done`. Icon overrides are read from tmux-attention's existing options:
 
@@ -187,6 +193,7 @@ set -g @tmux_attention_icon_input   "󱐋"
 set -g @tmux_attention_icon_blocked ""
 set -g @tmux_attention_icon_review  "󰛨"
 set -g @tmux_attention_icon_done    ""
+set -g @tmux_attention_icon_working "󰚩"
 ```
 
 When a marker also records a reason (tmux-attention's `@agent_attention_reason`, e.g. `approval_required`), it is shown dimmed next to the icon on that window/pane row.

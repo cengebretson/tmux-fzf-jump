@@ -6,6 +6,7 @@ trap 'printf "check failed at line %s\n" "$LINENO" >&2' ERR
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
+source "${ROOT_DIR}/defaults.sh"
 
 shellcheck select_pane.sh select_pane.tmux defaults.sh
 bash -n select_pane.sh select_pane.tmux defaults.sh
@@ -48,6 +49,37 @@ grep -q '^@4 ' <<< "${fixture_output}"
 # the attention marker on the relevant window/pane row.
 grep -q 'approval_required' <<< "${fixture_output}"
 grep -q 'task_running' <<< "${fixture_output}"
+grep -q 'active-agent' <<< "${fixture_output}"
+if grep -Eq '[0-9]+ (panes?|windows?)' <<< "${fixture_output}"; then
+    printf "session and window rows should not expose child counts to fzf search\n" >&2
+    exit 1
+fi
+first_pane_line="$(grep '^%1 ' <<< "${fixture_output}")"
+grep -q 'workspace / ' <<< "${first_pane_line}"
+grep -q 'api-agent' <<< "${first_pane_line}"
+grep -Fq "${default_attention_icon_input}" <<< "${first_pane_line}"
+if grep -Fq "${default_pane_icon}" <<< "${first_pane_line}"; then
+    printf "attention pane should replace the pane icon with its state icon\n" >&2
+    exit 1
+fi
+second_pane_line="$(grep '^%2 ' <<< "${fixture_output}")"
+grep -q 'workspace / ' <<< "${second_pane_line}"
+grep -q 'codex' <<< "${second_pane_line}"
+grep -Fq "${default_attention_icon_working}" <<< "${second_pane_line}"
+if grep -Fq "${default_pane_icon}" <<< "${second_pane_line}"; then
+    printf "working pane should replace the pane icon with the working icon\n" >&2
+    exit 1
+fi
+third_pane_line="$(grep '^%3 ' <<< "${fixture_output}")"
+grep -q 'workspace / ' <<< "${third_pane_line}"
+grep -q 'fish' <<< "${third_pane_line}"
+grep -Fq "${default_pane_icon}" <<< "${third_pane_line}"
+active_agent_line="$(grep '^@5 ' <<< "${fixture_output}")"
+grep -Fq "${default_attention_icon_working}" <<< "${active_agent_line}"
+if grep -Fq "${default_window_icon}" <<< "${active_agent_line}"; then
+    printf "active-agent window should replace the window icon with the working icon\n" >&2
+    exit 1
+fi
 
 if command -v tmux >/dev/null 2>&1; then
     real_tmux="$(command -v tmux)"
@@ -88,6 +120,9 @@ if command -v tmux >/dev/null 2>&1; then
         session_id="$(tmux -S "${socket_path}" display-message -p -t fzj-check '#{session_id}')"
         window_id="$(tmux -S "${socket_path}" display-message -p -t fzj-check:0 '#{window_id}')"
         pane_id="$(tmux -S "${socket_path}" display-message -p -t fzj-check:0.0 '#{pane_id}')"
+
+        printf 'named-pane\n' | PATH="${shim_dir}:${PATH}" ./select_pane.sh --action rename "${pane_id}" >/dev/null
+        test "$(tmux -S "${socket_path}" show-options -pqv -t "${pane_id}" @pane_name)" = "named-pane"
 
         printf 'renamed-session\n' | PATH="${shim_dir}:${PATH}" ./select_pane.sh --action rename "${session_id}" >/dev/null
         tmux -S "${socket_path}" has-session -t renamed-session

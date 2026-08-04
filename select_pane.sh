@@ -56,17 +56,19 @@ function select_pane() {
 
     local session_icon="${5}" window_icon="${6}" pane_icon="${7}" indent="${8}" separator="${9}"
     local highlight_color="${10}" activity_color="${11}"
-    local attention_icon_input attention_icon_blocked attention_icon_review attention_icon_done
+    local attention_icon_input attention_icon_blocked attention_icon_review attention_icon_done attention_icon_working
     attention_icon_input="$(get_tmux_option '@tmux_attention_icon_input' "${default_attention_icon_input}")"
     attention_icon_blocked="$(get_tmux_option '@tmux_attention_icon_blocked' "${default_attention_icon_blocked}")"
     attention_icon_review="$(get_tmux_option '@tmux_attention_icon_review' "${default_attention_icon_review}")"
     attention_icon_done="$(get_tmux_option '@tmux_attention_icon_done' "${default_attention_icon_done}")"
+    attention_icon_working="$(get_tmux_option '@tmux_attention_icon_working' "${default_attention_icon_working}")"
 
     export _FZJ_SI="${session_icon}" _FZJ_WI="${window_icon}" _FZJ_PI="${pane_icon}"
     export _FZJ_IN="${indent}" _FZJ_SEP="${separator}"
     export _FZJ_HC="${highlight_color}" _FZJ_AC="${activity_color}"
     export _FZJ_AI="${attention_icon_input}" _FZJ_AB="${attention_icon_blocked}"
     export _FZJ_AR="${attention_icon_review}" _FZJ_AD="${attention_icon_done}"
+    export _FZJ_AW="${attention_icon_working}"
 
     _fzj_list() {
         local cs cw cp
@@ -81,45 +83,40 @@ function select_pane() {
         {
             # Sessions sorted by most recently attached (newest first via inverted timestamp).
             # "${excl[@]}" applies the @fzf_pane_switch_exclude-sessions filter when set.
-            tmux list-sessions "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{session_id}\t#{session_windows}' | \
+            tmux list-sessions "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{session_id}' | \
                 awk -F'\t' -v icon="${_FZJ_SI}" -v cur="${cs}" -v hc="${_FZJ_HC}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
-                    printf "%010d:%s:00000:00000:0 %s %s%s %s  %s%s\n", ts, $3, $3, b, icon, $2, ($4==1?"":$4" windows"), r
+                    printf "%010d:%s:00000:00000:0 %s %s%s %s%s\n", ts, $3, $3, b, icon, $2, r
                 }'
             # Always list every window beneath its session — including the sole
             # window of a single-window session — so its activity and
             # tmux-attention marker are never hidden. (Panes below still collapse
             # when a window has only one.)
-            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}' | \
-                awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '{
+            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}\t#{@agent_context_active}' | \
+                awk -F'\t' -v indent="${_FZJ_IN}" -v window_icon="${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" -v aw="${_FZJ_AW}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur_s && $3==cur_w) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
                     act = ($8=="1") ? " \033[38;2;" ac "m●\033[0m" : ""
                     known = ($9=="input" || $9=="blocked" || $9=="review" || $9=="done")
-                    att = ($9=="input") ? ai : (($9=="blocked") ? ab : (($9=="review") ? ar : (($9=="done") ? ad : "")))
-                    att = (att=="") ? "" : " \033[38;2;" ac "m" att "\033[0m"
+                    state_icon = known ? (($9=="input") ? ai : (($9=="blocked") ? ab : (($9=="review") ? ar : ad))) : (($12=="1") ? aw : "")
+                    row_icon = indent window_icon
+                    if (state_icon != "") row_icon = indent "\033[38;2;" ac "m" state_icon "\033[0m" b
                     rsn = (known && $11!="") ? " \033[2m(" $11 ")\033[0m" : ""
-                    printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s  %s%s%s%s%s\n", ts, $10, $3, $4, b, icon, $2, sep, $5, ($6==1?"":$6" panes"), r, act, att, rsn
+                    printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s%s%s%s\n", ts, $10, $3, $4, b, row_icon, $2, sep, $5, r, act, rsn
                 }'
-            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}' | \
-                awk -F'\t' -v icon="${_FZJ_IN}${_FZJ_IN}${_FZJ_PI}" -v sep="${_FZJ_SEP}" -v cur="${cp}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v home="${HOME}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" '$7 > 1 {
+            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_pane_attention}\t#{session_id}\t#{@agent_pane_attention_reason}\t#{@agent_pane_context_active}\t#{@pane_name}' | \
+                awk -F'\t' -v indent="${_FZJ_IN}${_FZJ_IN}" -v pane_icon="${_FZJ_PI}" -v sep="${_FZJ_SEP}" -v cur="${cp}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" -v aw="${_FZJ_AW}" '$7 > 1 {
                     ts = 9999999999 - $1
                     b = ($5==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
                     act = ($9=="1") ? " \033[38;2;" ac "m●\033[0m" : ""
                     known = ($11=="input" || $11=="blocked" || $11=="review" || $11=="done")
-                    att = ($11=="input") ? ai : (($11=="blocked") ? ab : (($11=="review") ? ar : (($11=="done") ? ad : "")))
-                    att = (att=="") ? "" : " \033[38;2;" ac "m" att "\033[0m"
+                    state_icon = known ? (($11=="input") ? ai : (($11=="blocked") ? ab : (($11=="review") ? ar : ad))) : (($14=="1") ? aw : "")
+                    row_icon = indent pane_icon
+                    if (state_icon != "") row_icon = indent "\033[38;2;" ac "m" state_icon "\033[0m" b
                     rsn = (known && $13!="") ? " \033[2m(" $13 ")\033[0m" : ""
-                    cmd = ($8 ~ /^(bash|sh|zsh|fish|dash)$/) ? "" : " \033[2m(" $8 ")\033[0m"
-                    p = $10
-                    # Literal prefix replacement — sub() would treat home as an
-                    # ERE and mangle paths when it contains regex metacharacters.
-                    if (home != "" && index(p, home) == 1) p = "~" substr(p, length(home) + 1)
-                    n = split(p, parts, "/")
-                    if (n <= 2) short_path = p
-                    else { prefix = (parts[1] == "~") ? "~/" : ""; short_path = prefix parts[n-1] "/" parts[n] }
-                    printf "%010d:%s:%05d:%05d:2 %s %s%s %s %s %s %s %s%s%s%s%s%s\n", ts, $12, $3, $4, $5, b, icon, $2, sep, $6, sep, short_path, cmd, r, act, att, rsn
+                    label = $2 " " sep " " (($15 != "") ? $15 : $8)
+                    printf "%010d:%s:%05d:%05d:2 %s %s%s %s%s%s%s\n", ts, $12, $3, $4, $5, b, row_icon, label, r, act, rsn
                 }'
         } | sort | cut -d' ' -f2-
     }
@@ -221,10 +218,13 @@ function action_rename() {
             [[ -n "${new_name}" ]] && tmux rename-session -t "${target}" "${new_name}"
             ;;
         pane)
-            current_name=$(tmux display-message -p -t "${target}" '#{pane_title}')
+            current_name=$(tmux display-message -p -t "${target}" '#{@pane_name}')
             printf "Rename pane [%s]: " "${current_name}"
             read -r new_name
-            [[ -n "${new_name}" ]] && tmux select-pane -t "${target}" -T "${new_name}"
+            if [[ -n "${new_name}" ]]; then
+                tmux set-option -p -t "${target}" @pane_name "${new_name}"
+                tmux select-pane -t "${target}" -T "${new_name}"
+            fi
             ;;
         window)
             current_name=$(tmux display-message -p -t "${target}" '#{window_name}')
@@ -335,14 +335,16 @@ function print_fixture() {
     local activity=$'\033[38;2;249;226;175m'
     local dim=$'\033[2m'
 
-    printf "\$1 %s%s workspace  3 windows%s\n" "${highlight}" "${session_icon}" "${reset}"
-    printf "@1 %s%s workspace%s dashboard 2 panes  %s●%s %s%s%s\n" "${highlight}" "${indent}${window_icon}" "${separator}" "${activity}" "${reset}" "${activity}" "${default_attention_icon_input}" "${reset}"
-    printf "%%1 %s%s workspace%s dashboard%s tmux-fzf-jump %s(node)%s %s%s%s %s(task_running)%s\n" "${highlight}" "${indent}${indent}${pane_icon}" "${separator}" "${separator}" "${dim}" "${reset}" "${activity}" "${default_attention_icon_input}" "${reset}" "${dim}" "${reset}"
-    printf "%%2 %s workspace%s dashboard%s tmux-attention %s%s%s\n" "${indent}${indent}${pane_icon}" "${separator}" "${separator}" "${activity}" "${default_attention_icon_input}" "${reset}"
-    printf "@2 %s project%s api 1 pane  %s%s%s %s(approval_required)%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_blocked}" "${reset}" "${dim}" "${reset}"
-    printf "@3 %s project%s review 1 pane  %s%s%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_review}" "${reset}"
-    printf "\$2 %s archive  1 window\n" "${session_icon}"
-    printf "@4 %s archive%s done 1 pane  %s%s%s\n" "${indent}${window_icon}" "${separator}" "${activity}" "${default_attention_icon_done}" "${reset}"
+    printf "\$1 %s%s workspace%s\n" "${highlight}" "${session_icon}" "${reset}"
+    printf "@1 %s workspace %s dashboard%s %s●%s\n" "${highlight}${indent}${activity}${default_attention_icon_input}${reset}${highlight}" "${separator}" "${reset}" "${activity}" "${reset}"
+    printf "%%1 %s workspace %s api-agent%s %s(task_running)%s\n" "${highlight}${indent}${indent}${activity}${default_attention_icon_input}${reset}${highlight}" "${separator}" "${reset}" "${dim}" "${reset}"
+    printf "%%2 %s workspace %s codex\n" "${indent}${indent}${activity}${default_attention_icon_working}${reset}" "${separator}"
+    printf "%%3 %s workspace %s fish\n" "${indent}${indent}${pane_icon}" "${separator}"
+    printf "@2 %s project %s api %s(approval_required)%s\n" "${indent}${window_icon}" "${separator}" "${dim}" "${reset}"
+    printf "@3 %s project %s review\n" "${indent}${activity}${default_attention_icon_review}${reset}" "${separator}"
+    printf "@5 %s project %s active-agent\n" "${indent}${activity}${default_attention_icon_working}${reset}" "${separator}"
+    printf "\$2 %s archive\n" "${session_icon}"
+    printf "@4 %s archive %s done\n" "${indent}${window_icon}" "${separator}"
 }
 
 if [[ "${1:-}" == '--version' ]]; then

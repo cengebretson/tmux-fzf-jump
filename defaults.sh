@@ -21,6 +21,7 @@ default_attention_icon_input='󱐋'
 default_attention_icon_blocked=''
 default_attention_icon_review='󰛨'
 default_attention_icon_done=''
+default_attention_icon_working='󰚩'
 
 shell_quote() {
     local value="${1}"

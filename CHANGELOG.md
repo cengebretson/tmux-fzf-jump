@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Show tmux-attention's configurable working icon for active agent turns,
+  replacing the normal icon on both window and pane rows,
+  while keeping attention states higher priority. Pane rows consume
+  tmux-attention's pane-local state so multiple agents sharing a window render
+  independently.
+- Simplify pane rows to `<session> / <@pane_name-or-process>` instead of repeating
+  the window name, working directory, and command. Retaining the session keeps
+  it available for fuzzy matching, and the pane rename action now records
+  `@pane_name` alongside the native pane title.
+- Remove child-count text from session and window rows so values such as
+  `3 windows` or `2 panes` do not pollute fuzzy matching; pane counts still
+  control whether child rows appear.
+
 ## [2.5.0] - 2026-07-12
 
 ### Changed
