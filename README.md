@@ -76,7 +76,7 @@ All options are set in `~/.tmux.conf`. Quick reference:
 | `@fzf_pane_switch_bind-key` | `j` | Key binding (with prefix) |
 | `@fzf_pane_switch_window-position` | `center,70%,80%` | fzf popup position |
 | `@fzf_pane_switch_preview-pane` | `true` | Show pane preview |
-| `@fzf_pane_switch_preview-min-width` | `100` | Start with preview hidden below this terminal width |
+| `@fzf_pane_switch_preview-min-width` | `100` | Hide preview and search input below this terminal width |
 | `@fzf_pane_switch_preview-pane-position` | `right,,,nowrap` | Preview window position |
 | `@fzf_pane_switch_session-icon` | `󰐱` | Icon for session entries |
 | `@fzf_pane_switch_window-icon` | `󰖲` | Icon for window entries |
@@ -117,7 +117,11 @@ Default is `true`. Can also be toggled on the fly with `ctrl-p` inside the picke
 set -g @fzf_pane_switch_preview-min-width "100"
 ```
 
-Default is `100`. When the attached tmux client is narrower than this many columns, the picker starts with the preview pane hidden to save space. Set it to `0` to always honor `@fzf_pane_switch_preview-pane`.
+Default is `100`. When the attached tmux client is narrower than this many
+columns, the picker starts with the preview pane hidden and, on fzf 0.60.2 or
+newer, hides the search input entirely. This leaves the list as a compact
+navigation-only selector on mobile clients. Set it to `0` to keep the desktop
+layout at every width.
 
 ### Pane preview position
 

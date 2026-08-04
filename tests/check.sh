@@ -92,8 +92,11 @@ if command -v tmux >/dev/null 2>&1; then
     }
     trap cleanup EXIT
 
-    printf '#!/usr/bin/env bash\nexec %q -S %q "$@"\n' "${real_tmux}" "${socket_path}" > "${shim_dir}/tmux"
+    printf '#!/usr/bin/env bash\nif [[ -n "${FZJ_TEST_CLIENT_WIDTH:-}" && "${1:-}" == "display-message" && "${*: -1}" == "#{client_width}" ]]; then\n    printf "%%s\\n" "${FZJ_TEST_CLIENT_WIDTH}"\n    exit 0\nfi\nexec %q -S %q "$@"\n' "${real_tmux}" "${socket_path}" > "${shim_dir}/tmux"
     chmod +x "${shim_dir}/tmux"
+
+    printf '#!/usr/bin/env bash\nif [[ "${1:-}" == "--version" ]]; then\n    printf "0.74.2\\n"\n    exit 0\nfi\nprintf "%%s\\n" "$@" > "${FZJ_TEST_FZF_ARGS:?}"\n' > "${shim_dir}/fzf"
+    chmod +x "${shim_dir}/fzf"
 
     tmux -S "${socket_path}" -f /dev/null new-session -d -s fzj-check || true
 
@@ -116,6 +119,31 @@ if command -v tmux >/dev/null 2>&1; then
         empty_binding="$(tmux -S "${socket_path}" list-keys -T prefix | awk '$4 == "j"')"
         grep -q "'72'" <<< "${empty_binding}"
         grep -q "'' '166;227;161'" <<< "${empty_binding}"
+
+        mobile_fzf_args="${shim_dir}/mobile-fzf-args"
+        FZJ_TEST_CLIENT_WIDTH=80 FZJ_TEST_FZF_ARGS="${mobile_fzf_args}" PATH="${shim_dir}:${PATH}" \
+            ./select_pane.sh true 100 center,70%,80% right,,,nowrap S W P '  ' / '166;227;161' '249;226;175' >/dev/null
+        grep -Fxq -- '--no-input' "${mobile_fzf_args}"
+        grep -Fxq -- '--preview-window=right,,,nowrap,hidden' "${mobile_fzf_args}"
+        if grep -Fxq -- '--input-border' "${mobile_fzf_args}"; then
+            printf "narrow picker should not render the search input border\n" >&2
+            exit 1
+        fi
+        if grep -Fxq -- '--ghost' "${mobile_fzf_args}"; then
+            printf "narrow picker should not configure hidden search ghost text\n" >&2
+            exit 1
+        fi
+
+        desktop_fzf_args="${shim_dir}/desktop-fzf-args"
+        FZJ_TEST_CLIENT_WIDTH=120 FZJ_TEST_FZF_ARGS="${desktop_fzf_args}" PATH="${shim_dir}:${PATH}" \
+            ./select_pane.sh true 100 center,70%,80% right,,,nowrap S W P '  ' / '166;227;161' '249;226;175' >/dev/null
+        grep -Fxq -- '--input-border' "${desktop_fzf_args}"
+        grep -Fxq -- '--ghost' "${desktop_fzf_args}"
+        grep -Fxq -- '--preview-window=right,,,nowrap' "${desktop_fzf_args}"
+        if grep -Fxq -- '--no-input' "${desktop_fzf_args}"; then
+            printf "desktop picker should retain its search input\n" >&2
+            exit 1
+        fi
 
         session_id="$(tmux -S "${socket_path}" display-message -p -t fzj-check '#{session_id}')"
         window_id="$(tmux -S "${socket_path}" display-message -p -t fzj-check:0 '#{window_id}')"

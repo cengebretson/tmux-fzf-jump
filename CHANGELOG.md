@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use a compact navigation-only layout below the configured preview width:
+  the preview starts hidden as before, and fzf 0.60.2 or newer now hides the
+  search input section too.
+
 ## [2.6.0] - 2026-08-03
 
 ### Added

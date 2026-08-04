@@ -10,15 +10,16 @@ source "${_FZJ_DIR}/defaults.sh"
 function select_pane() {
     local fzf_version has_border_styling=false
     local pane target preview_pane preview_min_width client_width preview_window
-    local preview_starts_hidden=false
+    local narrow_client=false preview_starts_hidden=false input_hidden=false
 
     preview_pane="${1}"
     preview_min_width="${2}"
 
-    if [[ "${preview_pane}" = 'true' && "${preview_min_width}" =~ ^[0-9]+$ && "${preview_min_width}" -gt 0 ]]; then
+    if [[ "${preview_min_width}" =~ ^[0-9]+$ && "${preview_min_width}" -gt 0 ]]; then
         client_width="$(tmux display-message -p '#{client_width}')"
         if [[ "${client_width}" =~ ^[0-9]+$ && "${client_width}" -lt "${preview_min_width}" ]]; then
-            preview_starts_hidden=true
+            narrow_client=true
+            [[ "${preview_pane}" = 'true' ]] && preview_starts_hidden=true
         fi
     fi
 
@@ -32,15 +33,22 @@ function select_pane() {
         return 1
     fi
 
+    if [[ "${narrow_client}" = true ]] && fzf_at_least '0.60.2'; then
+        fzf_args+=(--no-input)
+        input_hidden=true
+    fi
+
     if fzf_at_least '0.58.0'; then
+        if [[ "${input_hidden}" = false ]]; then
+            fzf_args+=(--input-border --input-label=' Search (? for help) ' --info=inline-right)
+        fi
         fzf_args+=(
-            --input-border --input-label=' Search (? for help) ' --info=inline-right
             --list-border --list-label=' Tmux '
             --preview-border --preview-label=' Preview '
         )
         has_border_styling=true
     fi
-    if fzf_at_least '0.61.0'; then
+    if [[ "${input_hidden}" = false ]] && fzf_at_least '0.61.0'; then
         fzf_args+=(--ghost 'type to search...')
     fi
     [[ "${has_border_styling}" = false ]] && fzf_args+=(--preview-label=preview)
