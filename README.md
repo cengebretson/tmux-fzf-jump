@@ -52,12 +52,13 @@ Switch to any tmux session, window, or pane using fzf. The list is grouped hiera
 
 ## Usage
 
-Press `<prefix> + j` (the default key binding) to open the switcher. Type to fuzzy-search, use arrow keys to navigate, and press Enter to switch.
+Press `<prefix> + j` (the default key binding) to open the switcher. Type to fuzzy-search, use arrow keys to navigate, and press Enter to switch. Run `select_pane.sh --view attention` to open directly in the attention-only view.
 
 ### In-picker key bindings
 
 | Key | Action |
 |---|---|
+| `ctrl-a` | Toggle between the complete hierarchy and panes needing attention |
 | `ctrl-n` | New session / window / pane (context-sensitive) |
 | `ctrl-r` | Rename selected session / window / pane |
 | `ctrl-d` | Detach all clients from selected session |
@@ -66,6 +67,15 @@ Press `<prefix> + j` (the default key binding) to open the switcher. Type to fuz
 | `?` | Toggle key binding help |
 
 Renaming a pane sets its tmux pane title (visible in pane borders when enabled); pane titles are not shown in the picker list itself.
+
+The attention view is a flat queue of pane-local `input`, `blocked`, `review`, and `done` markers. It includes marked panes from single-pane windows, sorts them by state priority and marker recency, and shows the session, window, pane label, reason, and marker age. Opening directly in this view displays `No agents need attention` instead of opening an empty popup when the queue is clear. Toggling with `ctrl-a` preserves the current search query.
+
+For example, these no-prefix bindings open the normal and attention views:
+
+```tmux
+bind-key -n M-j run-shell "~/.tmux/plugins/tmux-fzf-jump/select_pane.sh"
+bind-key -n M-J run-shell "~/.tmux/plugins/tmux-fzf-jump/select_pane.sh --view attention"
+```
 
 ## Configuration
 
@@ -190,7 +200,7 @@ Pane labels use `<session> / <name>`, with the explicit pane option `@pane_name`
 tmux set-option -p -t %12 @pane_name "api"
 ```
 
-The supported states are `input`, `blocked`, `review`, and `done`. Icon overrides are read from tmux-attention's existing options:
+The supported states are `input`, `blocked`, `review`, and `done`. The attention view shows those pane-local states directly. Icon overrides are read from tmux-attention's existing options:
 
 ```bash
 set -g @tmux_attention_icon_input   "󱐋"

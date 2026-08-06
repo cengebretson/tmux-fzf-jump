@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a flat attention view for pane-local `input`, `blocked`, `review`, and
+  `done` markers, sorted by state priority and marker recency. Open it directly
+  with `select_pane.sh --view attention` or toggle it from the normal hierarchy
+  with `ctrl-a` while preserving the current search query.
+- Show attention reason and marker age in the focused view, include marked panes
+  from single-pane windows, and report `No agents need attention` instead of
+  opening an empty attention popup.
+
+### Fixed
+
+- Match the fallback blocked and done icons to tmux-attention's warning and
+  check-mark defaults.
+
 ## [2.7.0] - 2026-08-04
 
 ### Changed

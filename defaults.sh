@@ -18,9 +18,9 @@ default_separator='/'
 default_highlight_color='166;227;161'
 default_activity_color='249;226;175'
 default_attention_icon_input='󱐋'
-default_attention_icon_blocked=''
+default_attention_icon_blocked=''
 default_attention_icon_review='󰛨'
-default_attention_icon_done=''
+default_attention_icon_done=''
 default_attention_icon_working='󰚩'
 
 shell_quote() {

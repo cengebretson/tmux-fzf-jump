@@ -33,6 +33,25 @@ if ./select_pane.sh true center >/dev/null 2>&1; then
     exit 1
 fi
 
+if ./select_pane.sh --view unknown --test >/dev/null 2>&1; then
+    printf "unknown picker view should fail\n" >&2
+    exit 1
+fi
+
+view_state="$(mktemp)"
+printf 'all\n' > "${view_state}"
+toggle_output="$(./select_pane.sh --toggle-view "${view_state}" true)"
+test "$(<"${view_state}")" = "attention"
+grep -q 'reload(bash -c _fzj_list)' <<< "${toggle_output}"
+grep -q 'change-list-label( Attention )' <<< "${toggle_output}"
+toggle_output="$(./select_pane.sh --toggle-view "${view_state}" false)"
+test "$(<"${view_state}")" = "all"
+if grep -q 'change-list-label' <<< "${toggle_output}"; then
+    printf "legacy fzf toggle should not emit a list-label action\n" >&2
+    exit 1
+fi
+rm -f "${view_state}"
+
 fixture_output="$(./select_pane.sh --fixture)"
 # shellcheck disable=SC2016  # matching a literal $1 session id, not expanding
 grep -q '^\$1 ' <<< "${fixture_output}"
@@ -93,9 +112,13 @@ if command -v tmux >/dev/null 2>&1; then
     trap cleanup EXIT
 
     printf '#!/usr/bin/env bash\nif [[ -n "${FZJ_TEST_CLIENT_WIDTH:-}" && "${1:-}" == "display-message" && "${*: -1}" == "#{client_width}" ]]; then\n    printf "%%s\\n" "${FZJ_TEST_CLIENT_WIDTH}"\n    exit 0\nfi\nexec %q -S %q "$@"\n' "${real_tmux}" "${socket_path}" > "${shim_dir}/tmux"
+    printf '%s\n' \
+        '#!/usr/bin/env bash' \
+        'if [[ "${1:-}" == "--version" ]]; then printf "0.74.2\\n"; exit; fi' \
+        'if [[ -n "${FZJ_TEST_FZF_ARGS:-}" ]]; then printf "%s\\n" "$@" > "${FZJ_TEST_FZF_ARGS}"; fi' \
+        'if [[ -n "${FZJ_ARGS_CAPTURE:-}" ]]; then printf "%s\\n" "$@" > "${FZJ_ARGS_CAPTURE}"; fi' \
+        'if [[ -n "${FZJ_LIST_CAPTURE:-}" ]]; then cat > "${FZJ_LIST_CAPTURE}"; else cat >/dev/null; fi' > "${shim_dir}/fzf"
     chmod +x "${shim_dir}/tmux"
-
-    printf '#!/usr/bin/env bash\nif [[ "${1:-}" == "--version" ]]; then\n    printf "0.74.2\\n"\n    exit 0\nfi\nprintf "%%s\\n" "$@" > "${FZJ_TEST_FZF_ARGS:?}"\n' > "${shim_dir}/fzf"
     chmod +x "${shim_dir}/fzf"
 
     tmux -S "${socket_path}" -f /dev/null new-session -d -s fzj-check || true
@@ -149,6 +172,15 @@ if command -v tmux >/dev/null 2>&1; then
         window_id="$(tmux -S "${socket_path}" display-message -p -t fzj-check:0 '#{window_id}')"
         pane_id="$(tmux -S "${socket_path}" display-message -p -t fzj-check:0.0 '#{pane_id}')"
 
+        all_list_capture="$(mktemp)"
+        all_args_capture="$(mktemp)"
+        FZJ_LIST_CAPTURE="${all_list_capture}" FZJ_ARGS_CAPTURE="${all_args_capture}" \
+            PATH="${shim_dir}:${PATH}" ./select_pane.sh --test >/dev/null
+        # shellcheck disable=SC2016  # matching literal tmux target prefixes
+        grep -Eq '^[$@%]' "${all_list_capture}"
+        grep -q 'ctrl-a:transform' "${all_args_capture}"
+        grep -q -- '--list-label= Tmux ' "${all_args_capture}"
+
         printf 'named-pane\n' | PATH="${shim_dir}:${PATH}" ./select_pane.sh --action rename "${pane_id}" >/dev/null
         test "$(tmux -S "${socket_path}" show-options -pqv -t "${pane_id}" @pane_name)" = "named-pane"
 
@@ -157,6 +189,25 @@ if command -v tmux >/dev/null 2>&1; then
 
         printf 'renamed-window\n' | PATH="${shim_dir}:${PATH}" ./select_pane.sh --action rename "${window_id}" >/dev/null
         test "$(tmux -S "${socket_path}" display-message -p -t renamed-session:0 '#{window_name}')" = "renamed-window"
+
+        tmux -S "${socket_path}" set-option -pq -t "${pane_id}" @agent_pane_attention done
+        tmux -S "${socket_path}" set-option -pq -t "${pane_id}" @agent_pane_attention_reason task_complete
+        tmux -S "${socket_path}" set-option -pq -t "${pane_id}" @agent_pane_attention_updated_at "$(date +%s)"
+        attention_list_capture="$(mktemp)"
+        attention_args_capture="$(mktemp)"
+        FZJ_LIST_CAPTURE="${attention_list_capture}" FZJ_ARGS_CAPTURE="${attention_args_capture}" \
+            PATH="${shim_dir}:${PATH}" ./select_pane.sh --view attention --test >/dev/null
+        grep -Fq "${pane_id} " "${attention_list_capture}"
+        grep -Fq "${default_attention_icon_done}" "${attention_list_capture}"
+        grep -Fq '[done]' "${attention_list_capture}"
+        grep -q 'renamed-session / renamed-window / named-pane' "${attention_list_capture}"
+        grep -q 'task_complete' "${attention_list_capture}"
+        if grep -Eq '^[$@]' "${attention_list_capture}"; then
+            printf "attention view should contain pane targets only\n" >&2
+            exit 1
+        fi
+        grep -q 'ctrl-a:transform' "${attention_args_capture}"
+        grep -q -- '--list-label= Attention ' "${attention_args_capture}"
 
         printf 'created-session\n' | PATH="${shim_dir}:${PATH}" ./select_pane.sh --action new "${session_id}" >/dev/null
         tmux -S "${socket_path}" has-session -t created-session
@@ -181,6 +232,8 @@ if command -v tmux >/dev/null 2>&1; then
             printf "confirmed kill should remove selected window\n" >&2
             exit 1
         fi
+
+        rm -f "${all_list_capture}" "${all_args_capture}" "${attention_list_capture}" "${attention_args_capture}"
     else
         printf "skipping tmux smoke check: could not create isolated tmux server\n" >&2
     fi
