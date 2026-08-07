@@ -82,12 +82,10 @@ function select_pane() {
     export _FZJ_AW="${attention_icon_working}"
 
     _fzj_list() {
-        local cs cw cp view
-        view="${1:-}"
-        if [[ -z "${view}" && -n "${_FZJ_VIEW_FILE:-}" && -f "${_FZJ_VIEW_FILE}" ]]; then
+        local cs cw cp view='all'
+        if [[ -n "${_FZJ_VIEW_FILE:-}" && -f "${_FZJ_VIEW_FILE}" ]]; then
             view="$(<"${_FZJ_VIEW_FILE}")"
         fi
-        [[ -n "${view}" ]] || view='all'
 
         # One display-message for all three current-target fields rather than three.
         IFS=$'\t' read -r cs cw cp <<< "$(tmux display-message -p $'#{session_name}\t#{window_index}\t#{pane_id}')"

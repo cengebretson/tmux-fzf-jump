@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Remove the unused `_fzj_list` positional-argument path so current ShellCheck
+  versions do not fail CI with `SC2119` and `SC2120`.
+
 ## [2.8.0] - 2026-08-06
 
 ### Added
