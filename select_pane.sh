@@ -350,7 +350,8 @@ Usage:
   ${0##*/} --action <kill|rename|new|detach> <target>
   ${0##*/} <preview-pane> <preview-min-width> <fzf-window-position> <preview-window-position> <session-icon> <window-icon> <pane-icon> <indent> <separator> <highlight-color> <activity-color>
 
-Run with no arguments to use the default picker options.
+Run with no arguments to resolve the @fzf_pane_switch_* options, the same way
+the key binding does. Passing all eleven positionally overrides that.
 EOF
 }
 
@@ -492,13 +493,15 @@ case "${initial_view}" in
         ;;
 esac
 
-# --test is an alias of the no-argument invocation: both run the picker with
-# all defaults. Eleven arguments come from select_pane.tmux and pass through
+# --test is an alias of the no-argument invocation: both resolve the
+# @fzf_pane_switch_* options exactly as select_pane.tmux does when it builds the
+# key binding, so running this script directly and pressing the bound key render
+# identically. Eleven arguments come from select_pane.tmux and pass through
 # positionally unchanged.
 if [[ $# -eq 0 || "${1:-}" == '--test' ]]; then
-    select_pane "${default_preview_pane}" "${default_preview_min_width}" "${default_fzf_window_position}" "${default_fzf_preview_window_position}" \
-        "${default_session_icon}" "${default_window_icon}" "${default_pane_icon}" "${default_indent}" "${default_separator}" \
-        "${default_highlight_color}" "${default_activity_color}" "${initial_view}"
+    resolve_fzj_options
+    mapfile -t resolved_args < <(fzj_option_args)
+    select_pane "${resolved_args[@]}" "${initial_view}"
 elif [[ $# -eq 11 ]]; then
     select_pane "$@" "${initial_view}"
 else

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve the `@fzf_pane_switch_*` options on the no-argument code path.
+  `select_pane.tmux` resolved them to build the key binding, but running
+  `select_pane.sh` directly fell back to the raw defaults, so `prefix + j` and a
+  direct invocation rendered differently as soon as any option was set. Both
+  entry points now share `resolve_fzj_options` in `defaults.sh`. This also
+  applies to `--test`, which remains an alias of the no-argument invocation.
+
 ## [2.8.1] - 2026-08-06
 
 ### Fixed

@@ -8,7 +8,7 @@ A tmux plugin (TPM-compatible) that lets users switch to any session, window, or
 
 - `select_pane.tmux` — run by tmux with `run-shell`; reads user config options via `tmux show-option`, then registers a key binding that calls `select_pane.sh` with the resolved options as arguments. This file is Bash, not tmux config, so do not load it with `tmux source-file`.
 - `select_pane.sh` — invoked by tmux when the key binding fires; builds a combined list of sessions, windows, and panes, runs fzf, then switches to the selected target via `tmux switch-client`.
-- `defaults.sh` — single source of truth for the `default_*` option values, sourced by both scripts. Edit defaults here, not in the consuming scripts.
+- `defaults.sh` — single source of truth for the `default_*` option values, sourced by both scripts. Edit defaults here, not in the consuming scripts. It also owns `resolve_fzj_options`, which reads the eleven `@fzf_pane_switch_*` options into `fzj_opt_*` (falling back to the defaults), and `fzj_option_args`, which emits them in positional order. Both entry points call these, so the key binding and a direct no-argument invocation always agree.
 
 `get_tmux_option` distinguishes a set-but-empty option from an unset one (via `tmux show-option -gq`), so an option explicitly set to `""` overrides the default instead of falling back to it.
 
@@ -38,7 +38,7 @@ Sessions whose name matches the `@fzf_pane_switch_exclude-sessions` glob (empty 
 
 The picker binds `ctrl-x`/`ctrl-r`/`ctrl-n`/`ctrl-d` (kill/rename/new/detach) to `select_pane.sh --action <verb> <target>`, then refreshes the list with `reload(bash -c _fzj_list)`. That reload runs `_fzj_list` in a **fresh bash**: the function itself and every function it calls must be `export -f`'d (currently `_fzj_list` and `get_tmux_option` — forgetting one silently degrades the reloaded list), and everything else it needs arrives via exported `_FZJ_*` environment variables. Keep both in mind when extending `_fzj_list`.
 
-`select_pane.sh` also has dev/test entry points: `--fixture` prints a static, fully-styled list for assertions, `--fixture-fzf` pipes it through fzf for a visual check, and `--test` runs the real picker with all defaults (an alias of running with no arguments).
+`select_pane.sh` also has dev/test entry points: `--fixture` prints a static, fully-styled list for assertions, `--fixture-fzf` pipes it through fzf for a visual check, and `--test` runs the real picker with the resolved `@fzf_pane_switch_*` options (an alias of running with no arguments).
 
 ## Testing
 
@@ -71,7 +71,7 @@ bash select_pane.sh true 100 center,70%,80% right,,,nowrap 'S' 'W' 'P' '  ' '/' 
 
 ## Configurable tmux options
 
-All user-facing options use the prefix `@fzf_pane_switch_` and are read with `get_tmux_option` in `select_pane.tmux`. The defaults are the `default_*` variables in `defaults.sh`.
+All user-facing options use the prefix `@fzf_pane_switch_` and are read with `get_tmux_option` via `resolve_fzj_options` in `defaults.sh`. The defaults are the `default_*` variables in the same file. `@fzf_pane_switch_bind-key` is the exception: it selects which key runs the picker rather than how it renders, so it stays in `select_pane.tmux`.
 
 ## Pre-commit
 

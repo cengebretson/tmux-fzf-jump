@@ -143,6 +143,26 @@ if command -v tmux >/dev/null 2>&1; then
         grep -q "'72'" <<< "${empty_binding}"
         grep -q "'' '166;227;161'" <<< "${empty_binding}"
 
+        # The no-argument path must resolve the same options the binding does,
+        # so running this script directly matches pressing the bound key.
+        # Asserts on the session icon: this server still has a single-pane
+        # window, so only session and window rows render here.
+        option_list_capture="$(mktemp)"
+        tmux -S "${socket_path}" set-option -g @fzf_pane_switch_session-icon "ZZ"
+        FZJ_LIST_CAPTURE="${option_list_capture}" PATH="${shim_dir}:${PATH}" \
+            ./select_pane.sh >/dev/null
+        grep -Fq "ZZ" "${option_list_capture}"
+        if grep -Fq "${default_session_icon}" "${option_list_capture}"; then
+            printf "no-argument path ignored @fzf_pane_switch_session-icon\n" >&2
+            exit 1
+        fi
+
+        # Restore defaults: the assertions below render through the no-argument
+        # path, which now reads these options rather than ignoring them.
+        tmux -S "${socket_path}" set-option -gu @fzf_pane_switch_session-icon
+        tmux -S "${socket_path}" set-option -gu @fzf_pane_switch_separator
+        tmux -S "${socket_path}" set-option -gu @fzf_pane_switch_preview-min-width
+
         mobile_fzf_args="${shim_dir}/mobile-fzf-args"
         FZJ_TEST_CLIENT_WIDTH=80 FZJ_TEST_FZF_ARGS="${mobile_fzf_args}" PATH="${shim_dir}:${PATH}" \
             ./select_pane.sh true 100 center,70%,80% right,,,nowrap S W P '  ' / '166;227;161' '249;226;175' >/dev/null
