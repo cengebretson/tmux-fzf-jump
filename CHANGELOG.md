@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Window rows prefer the agent context label (`@agent_context_project` during a turn, else
+  `@agent_context_idle_project`) over `window_name`, falling back to `window_name` when neither
+  is set. Window names are usually a directory, so several worktrees of one repo looked
+  identical in the picker.
+- Pane rows prefer `@agent_pane_context_project` while that pane's agent is active, then the
+  existing `@pane_name`, then the running command.
+
+### Added
+
+- Row-rendering assertions for the window label. The awk program is extracted from
+  `select_pane.sh` rather than retyped so the test cannot drift from the code.
+
+### Requires
+
+- tmux-attention 0.7.0 or newer for the idle label. Older versions leave the field empty and
+  rows fall back to `window_name` exactly as before.
+
+## [2.8.2] - 2026-08-15
+
+### Fixed
+
+- Resolve the `@fzf_pane_switch_*` options on the no-argument code path.
+  `select_pane.tmux` resolved them to build the key binding, but running
+  `select_pane.sh` directly fell back to the raw defaults, so `prefix + j` and a
+  direct invocation rendered differently as soon as any option was set. Both
+  entry points now share `resolve_fzj_options` in `defaults.sh`. This also
+  applies to `--test`, which remains an alias of the no-argument invocation.
+
 ## [2.8.1] - 2026-08-06
 
 ### Fixed
@@ -205,7 +235,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Baseline release of the fzf-based session/window/pane switcher.
 
-[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.8.1...HEAD
+[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.8.2...HEAD
+[2.8.2]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.8.1...v2.8.2
 [2.8.1]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.8.0...v2.8.1
 [2.8.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.6.0...v2.7.0

@@ -143,6 +143,26 @@ if command -v tmux >/dev/null 2>&1; then
         grep -q "'72'" <<< "${empty_binding}"
         grep -q "'' '166;227;161'" <<< "${empty_binding}"
 
+        # The no-argument path must resolve the same options the binding does,
+        # so running this script directly matches pressing the bound key.
+        # Asserts on the session icon: this server still has a single-pane
+        # window, so only session and window rows render here.
+        option_list_capture="$(mktemp)"
+        tmux -S "${socket_path}" set-option -g @fzf_pane_switch_session-icon "ZZ"
+        FZJ_LIST_CAPTURE="${option_list_capture}" PATH="${shim_dir}:${PATH}" \
+            ./select_pane.sh >/dev/null
+        grep -Fq "ZZ" "${option_list_capture}"
+        if grep -Fq "${default_session_icon}" "${option_list_capture}"; then
+            printf "no-argument path ignored @fzf_pane_switch_session-icon\n" >&2
+            exit 1
+        fi
+
+        # Restore defaults: the assertions below render through the no-argument
+        # path, which now reads these options rather than ignoring them.
+        tmux -S "${socket_path}" set-option -gu @fzf_pane_switch_session-icon
+        tmux -S "${socket_path}" set-option -gu @fzf_pane_switch_separator
+        tmux -S "${socket_path}" set-option -gu @fzf_pane_switch_preview-min-width
+
         mobile_fzf_args="${shim_dir}/mobile-fzf-args"
         FZJ_TEST_CLIENT_WIDTH=80 FZJ_TEST_FZF_ARGS="${mobile_fzf_args}" PATH="${shim_dir}:${PATH}" \
             ./select_pane.sh true 100 center,70%,80% right,,,nowrap S W P '  ' / '166;227;161' '249;226;175' >/dev/null
@@ -238,5 +258,53 @@ if command -v tmux >/dev/null 2>&1; then
         printf "skipping tmux smoke check: could not create isolated tmux server\n" >&2
     fi
 fi
+
+# Window-row label resolution. The awk program is extracted from select_pane.sh rather than
+# retyped, so this cannot drift from the code it checks. Rows are synthetic: the point is the
+# field indices and the precedence, not tmux itself.
+window_awk="$(mktemp "${TMPDIR:-/tmp}/fzj-window-awk.XXXXXX")"
+python3 - "${ROOT_DIR}/select_pane.sh" >"${window_awk}" <<'PYEOF'
+import pathlib, re, sys
+src = pathlib.Path(sys.argv[1]).read_text()
+m = re.search(r"tmux list-windows -a .*?awk -F'\\t'.*?'\{(.*?)\}'", src, re.S)
+if not m:
+    sys.exit("window awk block not found in select_pane.sh")
+print("{" + m.group(1) + "}")
+PYEOF
+
+_fzj_window_row() {
+    printf '%s\n' "$1" |
+        awk -F'\t' -v indent="" -v window_icon="W" -v sep=">" -v cur_s="" -v cur_w="" \
+            -v hc="1;1;1" -v ac="2;2;2" -v ai="I" -v ab="B" -v ar="R" -v ad="D" -v aw="A" \
+            -f "${window_awk}" |
+        sed 's/\x1b\[[0-9;]*m//g'
+}
+
+# fields: 1 ts, 2 session, 3 window_index, 4 window_id, 5 window_name, 6 window_panes,
+#         7 session_windows, 8 activity, 9 attention, 10 session_id, 11 reason,
+#         12 context_active, 13 idle_project, 14 active_project
+idle_row="$(printf '100\tlos\t1\t@1\tflywl-331-worktree\t1\t3\t0\t\t$0\t\t\tFLYWL-331\t')"
+grep -q "los > FLYWL-331$" <<<"$(_fzj_window_row "${idle_row}")" || {
+    printf "window row should prefer the idle context label over the window name\n" >&2
+    exit 1
+}
+
+active_row="$(printf '100\tlos\t1\t@1\tflywl-331-worktree\t1\t3\t0\t\t$0\t\t1\tFLYWL-331\tFLYWL-999')"
+grep -q "los > FLYWL-999$" <<<"$(_fzj_window_row "${active_row}")" || {
+    printf "window row should prefer the active turn project over the idle label\n" >&2
+    exit 1
+}
+
+plain_row="$(printf '100\tlos\t1\t@1\tplainwin\t1\t3\t0\t\t$0\t\t\t\t')"
+grep -q "los > plainwin$" <<<"$(_fzj_window_row "${plain_row}")" || {
+    printf "window row should fall back to the window name with no context labels\n" >&2
+    exit 1
+}
+
+rm -f "${window_awk}"
+
+# The context fields must actually be requested, or the label logic above never sees them.
+grep -q '@agent_context_idle_project' select_pane.sh
+grep -q '@agent_pane_context_project' select_pane.sh
 
 printf "ok\n"
