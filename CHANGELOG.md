@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Window rows prefer the agent context label (`@agent_context_project` during a turn, else
+  `@agent_context_idle_project`) over `window_name`, falling back to `window_name` when neither
+  is set. Window names are usually a directory, so several worktrees of one repo looked
+  identical in the picker.
+- Pane rows prefer `@agent_pane_context_project` while that pane's agent is active, then the
+  existing `@pane_name`, then the running command.
+
+### Added
+
+- Row-rendering assertions for the window label. The awk program is extracted from
+  `select_pane.sh` rather than retyped so the test cannot drift from the code.
+
+### Requires
+
+- tmux-attention 0.7.0 or newer for the idle label. Older versions leave the field empty and
+  rows fall back to `window_name` exactly as before.
+
 ## [2.8.2] - 2026-08-15
 
 ### Fixed

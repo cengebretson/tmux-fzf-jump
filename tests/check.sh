@@ -259,4 +259,52 @@ if command -v tmux >/dev/null 2>&1; then
     fi
 fi
 
+# Window-row label resolution. The awk program is extracted from select_pane.sh rather than
+# retyped, so this cannot drift from the code it checks. Rows are synthetic: the point is the
+# field indices and the precedence, not tmux itself.
+window_awk="$(mktemp "${TMPDIR:-/tmp}/fzj-window-awk.XXXXXX")"
+python3 - "${ROOT_DIR}/select_pane.sh" >"${window_awk}" <<'PYEOF'
+import pathlib, re, sys
+src = pathlib.Path(sys.argv[1]).read_text()
+m = re.search(r"tmux list-windows -a .*?awk -F'\\t'.*?'\{(.*?)\}'", src, re.S)
+if not m:
+    sys.exit("window awk block not found in select_pane.sh")
+print("{" + m.group(1) + "}")
+PYEOF
+
+_fzj_window_row() {
+    printf '%s\n' "$1" |
+        awk -F'\t' -v indent="" -v window_icon="W" -v sep=">" -v cur_s="" -v cur_w="" \
+            -v hc="1;1;1" -v ac="2;2;2" -v ai="I" -v ab="B" -v ar="R" -v ad="D" -v aw="A" \
+            -f "${window_awk}" |
+        sed 's/\x1b\[[0-9;]*m//g'
+}
+
+# fields: 1 ts, 2 session, 3 window_index, 4 window_id, 5 window_name, 6 window_panes,
+#         7 session_windows, 8 activity, 9 attention, 10 session_id, 11 reason,
+#         12 context_active, 13 idle_project, 14 active_project
+idle_row="$(printf '100\tlos\t1\t@1\tflywl-331-worktree\t1\t3\t0\t\t$0\t\t\tFLYWL-331\t')"
+grep -q "los > FLYWL-331$" <<<"$(_fzj_window_row "${idle_row}")" || {
+    printf "window row should prefer the idle context label over the window name\n" >&2
+    exit 1
+}
+
+active_row="$(printf '100\tlos\t1\t@1\tflywl-331-worktree\t1\t3\t0\t\t$0\t\t1\tFLYWL-331\tFLYWL-999')"
+grep -q "los > FLYWL-999$" <<<"$(_fzj_window_row "${active_row}")" || {
+    printf "window row should prefer the active turn project over the idle label\n" >&2
+    exit 1
+}
+
+plain_row="$(printf '100\tlos\t1\t@1\tplainwin\t1\t3\t0\t\t$0\t\t\t\t')"
+grep -q "los > plainwin$" <<<"$(_fzj_window_row "${plain_row}")" || {
+    printf "window row should fall back to the window name with no context labels\n" >&2
+    exit 1
+}
+
+rm -f "${window_awk}"
+
+# The context fields must actually be requested, or the label logic above never sees them.
+grep -q '@agent_context_idle_project' select_pane.sh
+grep -q '@agent_pane_context_project' select_pane.sh
+
 printf "ok\n"

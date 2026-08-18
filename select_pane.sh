@@ -141,7 +141,7 @@ function select_pane() {
             # window of a single-window session — so its activity and
             # tmux-attention marker are never hidden. (Panes below still collapse
             # when a window has only one.)
-            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}\t#{@agent_context_active}' | \
+            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}\t#{@agent_context_active}\t#{@agent_context_idle_project}\t#{@agent_context_project}' | \
                 awk -F'\t' -v indent="${_FZJ_IN}" -v window_icon="${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" -v aw="${_FZJ_AW}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur_s && $3==cur_w) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
@@ -151,9 +151,13 @@ function select_pane() {
                     row_icon = indent window_icon
                     if (state_icon != "") row_icon = indent "\033[38;2;" ac "m" state_icon "\033[0m" b
                     rsn = (known && $11!="") ? " \033[2m(" $11 ")\033[0m" : ""
-                    printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s%s%s%s\n", ts, $10, $3, $4, b, row_icon, $2, sep, $5, r, act, rsn
+                    # Prefer the agent context label over the window name: window names are
+                    # usually a directory, so several worktrees of one repo look identical
+                    # here, which is exactly when you are trying to tell them apart.
+                    wlbl = ($12=="1" && $14!="") ? $14 : (($13!="") ? $13 : $5)
+                    printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s%s%s%s\n", ts, $10, $3, $4, b, row_icon, $2, sep, wlbl, r, act, rsn
                 }'
-            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_pane_attention}\t#{session_id}\t#{@agent_pane_attention_reason}\t#{@agent_pane_context_active}\t#{@pane_name}' | \
+            tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_pane_attention}\t#{session_id}\t#{@agent_pane_attention_reason}\t#{@agent_pane_context_active}\t#{@pane_name}\t#{@agent_pane_context_project}' | \
                 awk -F'\t' -v indent="${_FZJ_IN}${_FZJ_IN}" -v pane_icon="${_FZJ_PI}" -v sep="${_FZJ_SEP}" -v cur="${cp}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" -v aw="${_FZJ_AW}" '$7 > 1 {
                     ts = 9999999999 - $1
                     b = ($5==cur) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
@@ -163,7 +167,9 @@ function select_pane() {
                     row_icon = indent pane_icon
                     if (state_icon != "") row_icon = indent "\033[38;2;" ac "m" state_icon "\033[0m" b
                     rsn = (known && $13!="") ? " \033[2m(" $13 ")\033[0m" : ""
-                    label = $2 " " sep " " (($15 != "") ? $15 : $8)
+                    # A pane running an agent is identified by its ticket; otherwise keep the
+                    # existing custom pane name, then the running command.
+                    label = $2 " " sep " " (($14=="1" && $16!="") ? $16 : (($15 != "") ? $15 : $8))
                     printf "%010d:%s:%05d:%05d:2 %s %s%s %s%s%s%s\n", ts, $12, $3, $4, $5, b, row_icon, label, r, act, rsn
                 }'
         } | sort | cut -d' ' -f2-
