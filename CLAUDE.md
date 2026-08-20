@@ -38,7 +38,7 @@ Sessions whose name matches the `@fzf_pane_switch_exclude-sessions` glob (empty 
 
 The picker binds `ctrl-x`/`ctrl-r`/`ctrl-n`/`ctrl-d` (kill/rename/new/detach) to `select_pane.sh --action <verb> <target>`, then refreshes the list with `reload(bash -c _fzj_list)`. That reload runs `_fzj_list` in a **fresh bash**: the function itself and every function it calls must be `export -f`'d (currently `_fzj_list` and `get_tmux_option` — forgetting one silently degrades the reloaded list), and everything else it needs arrives via exported `_FZJ_*` environment variables. Keep both in mind when extending `_fzj_list`.
 
-`select_pane.sh` also has dev/test entry points: `--fixture` prints a static, fully-styled list for assertions, `--fixture-fzf` pipes it through fzf for a visual check, and `--test` runs the real picker with the resolved `@fzf_pane_switch_*` options (an alias of running with no arguments).
+`select_pane.sh --view attention` opens directly in the attention-only queue. It also has dev/test entry points: `--fixture` prints a static, fully-styled list for assertions, `--fixture-fzf` pipes it through fzf for a visual check, and `--test` runs the real picker with the resolved `@fzf_pane_switch_*` options (an alias of running with no arguments).
 
 ## Testing
 
