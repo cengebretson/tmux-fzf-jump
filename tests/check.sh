@@ -282,16 +282,17 @@ _fzj_window_row() {
 
 # fields: 1 ts, 2 session, 3 window_index, 4 window_id, 5 window_name, 6 window_panes,
 #         7 session_windows, 8 activity, 9 attention, 10 session_id, 11 reason,
-#         12 context_active, 13 idle_project, 14 active_project
+#         12 context_active. The two trailing synthetic fields represent legacy context labels
+#         and verify that they cannot replace the native window name.
 idle_row="$(printf '100\tlos\t1\t@1\tflywl-331-worktree\t1\t3\t0\t\t$0\t\t\tFLYWL-331\t')"
-grep -q "los > FLYWL-331$" <<<"$(_fzj_window_row "${idle_row}")" || {
-    printf "window row should prefer the idle context label over the window name\n" >&2
+grep -q "los > flywl-331-worktree$" <<<"$(_fzj_window_row "${idle_row}")" || {
+    printf "window row should use the window name instead of the idle context label\n" >&2
     exit 1
 }
 
 active_row="$(printf '100\tlos\t1\t@1\tflywl-331-worktree\t1\t3\t0\t\t$0\t\t1\tFLYWL-331\tFLYWL-999')"
-grep -q "los > FLYWL-999$" <<<"$(_fzj_window_row "${active_row}")" || {
-    printf "window row should prefer the active turn project over the idle label\n" >&2
+grep -q "los > flywl-331-worktree$" <<<"$(_fzj_window_row "${active_row}")" || {
+    printf "window row should use the window name instead of the active context label\n" >&2
     exit 1
 }
 
@@ -303,8 +304,12 @@ grep -q "los > plainwin$" <<<"$(_fzj_window_row "${plain_row}")" || {
 
 rm -f "${window_awk}"
 
-# The context fields must actually be requested, or the label logic above never sees them.
-grep -q '@agent_context_idle_project' select_pane.sh
+# Window context still drives the working icon, but project labels belong to pane rows only.
+grep -q '@agent_context_active' select_pane.sh
+if grep -q '@agent_context_idle_project\|@agent_context_project' select_pane.sh; then
+    printf "window rows should not request agent project labels\n" >&2
+    exit 1
+fi
 grep -q '@agent_pane_context_project' select_pane.sh
 
 printf "ok\n"

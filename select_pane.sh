@@ -141,7 +141,7 @@ function select_pane() {
             # window of a single-window session — so its activity and
             # tmux-attention marker are never hidden. (Panes below still collapse
             # when a window has only one.)
-            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}\t#{@agent_context_active}\t#{@agent_context_idle_project}\t#{@agent_context_project}' | \
+            tmux list-windows -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{window_id}\t#{window_name}\t#{window_panes}\t#{session_windows}\t#{window_activity_flag}\t#{@agent_attention}\t#{session_id}\t#{@agent_attention_reason}\t#{@agent_context_active}' | \
                 awk -F'\t' -v indent="${_FZJ_IN}" -v window_icon="${_FZJ_WI}" -v sep="${_FZJ_SEP}" -v cur_s="${cs}" -v cur_w="${cw}" -v hc="${_FZJ_HC}" -v ac="${_FZJ_AC}" -v ai="${_FZJ_AI}" -v ab="${_FZJ_AB}" -v ar="${_FZJ_AR}" -v ad="${_FZJ_AD}" -v aw="${_FZJ_AW}" '{
                     ts = 9999999999 - $1
                     b = ($2==cur_s && $3==cur_w) ? "\033[1;38;2;" hc "m" : ""; r = b!="" ? "\033[0m" : ""
@@ -151,10 +151,9 @@ function select_pane() {
                     row_icon = indent window_icon
                     if (state_icon != "") row_icon = indent "\033[38;2;" ac "m" state_icon "\033[0m" b
                     rsn = (known && $11!="") ? " \033[2m(" $11 ")\033[0m" : ""
-                    # Prefer the agent context label over the window name: window names are
-                    # usually a directory, so several worktrees of one repo look identical
-                    # here, which is exactly when you are trying to tell them apart.
-                    wlbl = ($12=="1" && $14!="") ? $14 : (($13!="") ? $13 : $5)
+                    # Window names are deliberate, stable human labels. Agent context still
+                    # controls the working icon, but it does not replace the chosen name.
+                    wlbl = $5
                     printf "%010d:%s:%05d:00000:1 %s %s%s %s %s %s%s%s%s\n", ts, $10, $3, $4, b, row_icon, $2, sep, wlbl, r, act, rsn
                 }'
             tmux list-panes -a "${excl[@]}" -F $'#{session_last_attached}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}\t#{window_name}\t#{window_panes}\t#{pane_current_command}\t#{pane_unseen_changes}\t#{pane_current_path}\t#{@agent_pane_attention}\t#{session_id}\t#{@agent_pane_attention_reason}\t#{@agent_pane_context_active}\t#{@pane_name}\t#{@agent_pane_context_project}' | \
