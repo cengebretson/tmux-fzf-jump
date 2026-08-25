@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.2] - 2026-08-25
+
 ### Changed
 
 - Window rows always use the native tmux window name instead of replacing it with inferred
@@ -250,7 +252,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Baseline release of the fzf-based session/window/pane switcher.
 
-[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.9.1...HEAD
+[Unreleased]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.9.2...HEAD
+[2.9.2]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.9.1...v2.9.2
 [2.9.1]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.9.0...v2.9.1
 [2.9.0]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.8.2...v2.9.0
 [2.8.2]: https://github.com/cengebretson/tmux-fzf-jump/compare/v2.8.1...v2.8.2
