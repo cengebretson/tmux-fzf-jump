@@ -505,7 +505,10 @@ esac
 # positionally unchanged.
 if [[ $# -eq 0 || "${1:-}" == '--test' ]]; then
     resolve_fzj_options
-    mapfile -t resolved_args < <(fzj_option_args)
+    resolved_args=()
+    while IFS= read -r resolved_arg; do
+        resolved_args+=("${resolved_arg}")
+    done < <(fzj_option_args)
     select_pane "${resolved_args[@]}" "${initial_view}"
 elif [[ $# -eq 11 ]]; then
     select_pane "$@" "${initial_view}"

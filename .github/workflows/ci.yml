@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  test-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,3 +30,14 @@ jobs:
 
       - name: Run smoke checks
         run: tests/check.sh
+
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install fzf shellcheck tmux
+
+      - name: Run smoke checks with system Bash
+        run: /bin/bash tests/check.sh

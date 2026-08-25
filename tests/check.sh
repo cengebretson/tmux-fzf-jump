@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016 # Fixtures deliberately preserve shell expressions and tmux IDs.
 set -euo pipefail
 
 # Without this, a failed assertion under `set -e` exits 1 with no output at all.
@@ -210,7 +211,7 @@ if command -v tmux >/dev/null 2>&1; then
         printf 'renamed-window\n' | PATH="${shim_dir}:${PATH}" ./select_pane.sh --action rename "${window_id}" >/dev/null
         test "$(tmux -S "${socket_path}" display-message -p -t renamed-session:0 '#{window_name}')" = "renamed-window"
 
-        tmux -S "${socket_path}" set-option -pq -t "${pane_id}" @agent_pane_attention done
+        tmux -S "${socket_path}" set-option -pq -t "${pane_id}" @agent_pane_attention "done"
         tmux -S "${socket_path}" set-option -pq -t "${pane_id}" @agent_pane_attention_reason task_complete
         tmux -S "${socket_path}" set-option -pq -t "${pane_id}" @agent_pane_attention_updated_at "$(date +%s)"
         attention_list_capture="$(mktemp)"

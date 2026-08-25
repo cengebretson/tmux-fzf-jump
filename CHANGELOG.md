@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Window rows always use the native tmux window name instead of replacing it with inferred
   tmux-attention project context. Attention and active-turn state still control the row icon.
+- Restore compatibility with the Bash 3.2 runtime included with macOS and enforce it in CI.
 
 ## [2.9.1] - 2026-08-20
 

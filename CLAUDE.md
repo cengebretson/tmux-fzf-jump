@@ -50,6 +50,9 @@ tests/check.sh
 
 The check script runs ShellCheck, Bash syntax validation, the `--version` check, fixture assertions, and an isolated tmux server check that verifies `prefix + j` is bound through `run-shell` (including that an option set to `""` overrides its default). The same checks run in CI (`.github/workflows/ci.yml`) on every push and pull request.
 
+Keep the runtime compatible with Bash 3.2, the system Bash shipped with macOS.
+CI runs the integration suite with `/bin/bash` on macOS to enforce that boundary.
+
 Assertion gotcha: tmux >= 3.7 prints nothing for `list-keys -T prefix j` (the trailing key-filter form), so the check greps the full `list-keys -T prefix` table instead — write new binding assertions the same way. An ERR trap reports the failing line; without it `set -e` + `grep -q` fails with no output at all.
 
 For manual testing inside a live tmux session:

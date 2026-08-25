@@ -10,7 +10,7 @@ Switch to any tmux session, window, or pane using fzf. The list is grouped hiera
 
 * [fzf](https://github.com/junegunn/fzf) >= 0.53.0 (requires `--tmux`; >= 0.58.0 for border styling as shown above).
 * [tmux](https://github.com/tmux/tmux) >= 3.4 (uses `#{pane_unseen_changes}`).
-* Bash >= 4.0 (`select_pane.sh` uses `mapfile`; on macOS, install a current Bash with Homebrew and ensure it precedes `/bin` in tmux's `PATH`).
+* Bash >= 3.2 (the system Bash included with macOS is supported).
 * A [Nerd Font](https://www.nerdfonts.com/) for the default icons (configurable — see below).
 
 ## Installation
